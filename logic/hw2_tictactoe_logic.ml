@@ -116,7 +116,9 @@ module Game_state = struct
     square >= 1 && square <= t.num_squares_per_side
   ;;
 
-  let make_move t (cell_position : Move.t) : (t, Move_error.t) Result.t =
+  (* Make a move on the board. The moves are represented as values from 1 to
+     num_squares_per_side and correspond to the squares on each player's side *)
+  let make_move t (move : int) : (t, Move_error.t) Result.t =
     match t.decision with
     | _ when not (is_legal_cell_position t cell_position) -> Error Illegal_cell_position
     | Winner _ | Stalemate -> Error Game_is_over
