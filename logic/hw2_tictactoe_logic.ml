@@ -1,9 +1,10 @@
 open! Core
+open! Stdlib
 
-module Player_kind = struct
+module Players = struct
   type t =
-    | X
-    | O
+    | PlayerOne
+    | PlayerTwo
   [@@deriving sexp, compare, equal]
 
   (* It's clearer to use type inference and just write:
@@ -11,48 +12,56 @@ module Player_kind = struct
   *)
   let opposite (t : t) : t =
     match t with
-    | X -> O
-    | O -> X
+    | PlayerOne -> PlayerTwo
+    | PlayerTwo -> PlayerOne
   ;;
 end
 
-module Cell_position = struct
-  module T = struct
-    type t =
-      { row : int
-      ; column : int
-      }
-    [@@deriving sexp, compare]
+module Move = struct
+  type t = int
+  [@@deriving sexp, compare, equal]
+
+  module Invalid_move = struct
+    type t = 
+    | Not_a_valid_square
+    | Square_is_empty
+    | Game_is_over
+    [@@deriving sexp, compare, equal]
   end
 
-  include T
+  let create ~move ~(game_state : Game_state.t)  : (t, Invalid_move.t) Result.t =
+    if move < 0 || move > game_state.num_squares_per_side
+    then Error Not_a_valid_square
+    else if game_state.is_square_empty move
+    then Error Square_is_empty
+    else if game_state.is_game_over
+    then Error Game_is_over
+    else Ok move
 
-  (* Creates a [Cell_position.Map.t]. *)
-  include Comparable.Make (T)
 end
-
-module Move = Cell_position
 
 module Decision = struct
   type t =
-    | In_progress of { whose_turn : Player_kind.t }
-    | Winner of Player_kind.t
-    | Stalemate
+    | Playing of { whose_turn : Players.t }
+    | Winner of Players.t
+    | Tie
   [@@deriving sexp, compare, equal]
 
   let is_game_over t =
     match t with
-    | Stalemate | Winner _ -> true
-    | In_progress _ -> false
+    | Tie | Winner _ -> true
+    | Playing _ -> false
   ;;
 end
 
 module Game_state = struct
   type t =
-    { board : Player_kind.t Cell_position.Map.t
-    ; rows : int
-    ; columns : int
-    ; winning_sequence_length : int
+    { player_one_side: int array
+    ; player_two_side: int array
+    ; player_one_score: int
+    ; player_two_score: int
+    ; num_squares_per_side: int
+    ; init_beads: int
     ; decision : Decision.t
     ; last_move : Move.t option (* For animation purposes. *)
     }
@@ -61,70 +70,39 @@ module Game_state = struct
   module Create_error = struct
     type t =
       | Board_too_big_or_small
-      | Unwinnable_sequence_length
     [@@deriving sexp, compare]
   end
 
-  let create ~rows ~columns ~winning_sequence_length : (t, Create_error.t list) Result.t =
-    let size_ok = rows < 20 && columns < 20 && rows > 0 && columns > 0 in
-    let sequence_length_ok =
-      (winning_sequence_length <= rows || winning_sequence_length <= columns)
-      && winning_sequence_length > 0
-    in
-    match size_ok, sequence_length_ok with
-    | true, true ->
+  let create ~num_squares_per_side ~init_beads : (t, Create_error.t list) Result.t =
+    let size_ok = num_squares_per_side < 20 && num_squares_per_side > 0 in
+    match size_ok with
+    | true ->
       Ok
-        { board = Cell_position.Map.empty
-        ; winning_sequence_length
-        ; rows
-        ; columns
-        ; decision = In_progress { whose_turn = X }
+        { player_one_side = Array.make num_squares_per_side init_beads
+        ; player_two_side = Array.make num_squares_per_side init_beads
+        ; num_squares_per_side = num_squares_per_side
+        ; init_beads = init_beads
+        ; player_one_score = 0
+        ; player_two_score = 0
+        ; decision = Playing { whose_turn = PlayerOne }
         ; last_move = None
         }
     | _ ->
       Error
-        ((if size_ok then [] else [ Create_error.Board_too_big_or_small ])
-         @ if sequence_length_ok then [] else [ Create_error.Unwinnable_sequence_length ]
-        )
+        ((if size_ok then [] else [ Create_error.Board_too_big_or_small ]))
   ;;
 
-  let value_if_all_the_same list =
-    match list with
-    | hd :: tl -> if List.for_all tl ~f:(Player_kind.equal hd) then Some hd else None
-    | [] -> None
-  ;;
+  let is_square_empty t square_index =
+    if t.decision = Playing { whose_turn = Players.PlayerOne }
+      then t.player_one_side.(square_index) = 0
+      else t.player_two_side.(square_index) = 0
 
-  let check_direction_starting_from
-        ~vertical_delta
-        ~horizontal_delta
-        { board; winning_sequence_length; _ }
-        ({ row; column } : Cell_position.t)
-    =
-    let cells =
-      List.range 0 winning_sequence_length
-      |> List.filter_map ~f:(fun i ->
-        Map.find
-          board
-          { row = row + (i * vertical_delta); column = column + (i * horizontal_delta) })
-    in
-    if List.length cells >= winning_sequence_length
-    then value_if_all_the_same cells
-    else None
-  ;;
+  let is_game_over t = Decision.is_game_over t.decision
 
-  let deltas = List.init 3 ~f:(fun i -> i - 1)
-
-  let all_directions =
-    List.cartesian_product deltas deltas
-    |> List.filter ~f:(fun (vertical_delta, horizontal_delta) ->
-      vertical_delta <> 0 || horizontal_delta <> 0)
-  ;;
-
-  let check_all_directions t cell_position =
-    all_directions
-    |> List.filter_map ~f:(fun (vertical_delta, horizontal_delta) ->
-      check_direction_starting_from ~vertical_delta ~horizontal_delta t cell_position)
-    |> value_if_all_the_same
+  let get_current_player t =
+    match t.decision with
+    | Playing { whose_turn } -> Some whose_turn
+    | Winner _ | Tie -> None
   ;;
 
   (** Checks every position on the board, paired with every one of the eight directions,
@@ -152,17 +130,10 @@ module Game_state = struct
   module Move_error = struct
     type t =
       | Game_is_over
-      | Space_already_filled
-      | Illegal_cell_position
+      | Not_a_valid_square
+      | Square_is_empty
     [@@deriving sexp, compare]
   end
-
-  let get_all_moves t : Move.t list =
-    let rows = List.range 0 t.rows in
-    let columns = List.range 0 t.columns in
-    List.cartesian_product rows columns
-    |> List.map ~f:(fun (row, column) : Move.t -> { row; column })
-  ;;
 
   let make_move t (cell_position : Move.t) : (t, Move_error.t) Result.t =
     match t.decision with
