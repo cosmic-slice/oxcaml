@@ -105,10 +105,10 @@ module Game_state = struct
     let player_one_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_one_side in
     let player_two_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_two_side in
     if player_one_total = 0 || player_two_total = 0 then begin
-      t.player_one_score <- t.player_one_score + player_one_total;
-      t.player_two_score <- t.player_two_score + player_two_total;
-      if t.player_one_score > t.player_two_score then Some (Decision.Winner Players.PlayerOne)
-      else if t.player_two_score > t.player_one_score then Some (Decision.Winner Players.PlayerTwo)
+      let final_player_one_score = t.player_one_score + player_one_total in
+      let final_player_two_score = t.player_two_score + player_two_total in
+      if final_player_one_score > final_player_two_score then Some (Decision.Winner Players.PlayerOne)
+      else if final_player_two_score > final_player_one_score then Some (Decision.Winner Players.PlayerTwo)
       else Some Decision.Tie
     end
     else None
