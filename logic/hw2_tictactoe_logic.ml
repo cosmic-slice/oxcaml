@@ -101,15 +101,21 @@ module Game_state = struct
       Also note that if there are multiple win sequences, this algorithm will pick the
       first one it finds. This is fine because game play stops when the first win-sequence
       has been created. *)
-  let check_winner t =
-    Map.filter_keys t.board ~f:(fun cell_position ->
-      check_all_directions t cell_position |> Option.is_some)
-    |> Map.min_elt
-    |> Option.map ~f:snd
+  let check_winner t : Decision.t option =
+    let player_one_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_one_side in
+    let player_two_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_two_side in
+    if player_one_total = 0 || player_two_total = 0 then begin
+      t.player_one_score <- t.player_one_score + player_one_total;
+      t.player_two_score <- t.player_two_score + player_two_total;
+      if t.player_one_score > t.player_two_score then Some (Decision.Winner Players.PlayerOne)
+      else if t.player_two_score > t.player_one_score then Some (Decision.Winner Players.PlayerTwo)
+      else Some Decision.Tie
+    end
+    else None
   ;;
 
-  let is_legal_cell_position { rows; columns; _ } ({ row; column } : Cell_position.t) =
-    0 <= row && 0 <= column && row < rows && column < columns
+  let is_valid_square t (square : int) =
+    square >= 1 && square <= t.num_squares_per_side
   ;;
 
   let make_move t (cell_position : Move.t) : (t, Move_error.t) Result.t =
