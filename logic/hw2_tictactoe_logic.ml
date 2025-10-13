@@ -136,7 +136,4 @@ module Game_state = struct
          Ok { t with board; decision; last_move = Some cell_position })
   ;;
 
-  module For_testing = struct
-    let all_directions = all_directions
-  end
 end
