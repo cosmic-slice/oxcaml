@@ -58,6 +58,8 @@ module Game_state = struct
     [@@deriving sexp, compare]
   end
 
+  (* Create an instance of the board module with a set number of squares per 
+     side and an initial number of beads *)
   let create ~num_squares_per_side ~init_beads : (t, Create_error.t list) Result.t =
     let size_ok = num_squares_per_side < 20 && num_squares_per_side > 0 in
     match size_ok with
@@ -77,12 +79,15 @@ module Game_state = struct
         ((if size_ok then [] else [ Create_error.Board_too_big_or_small ]))
   ;;
 
-  let is_square_empty t square_index =
+  (* Check if a square is empty. The square that's checked belongs to the current
+     player*)
+  let is_square_empty t square_index : bool =
     if t.decision = Playing { whose_turn = Players.PlayerOne }
       then t.player_one_side.(square_index) = 0
       else t.player_two_side.(square_index) = 0
+  ;;
 
-  let is_game_over t = Decision.is_game_over t.decision
+  let is_game_over t = Decision.is_game_over t.decision;;
 
   let get_current_player t =
     match t.decision with
@@ -90,17 +95,8 @@ module Game_state = struct
     | Winner _ | Tie -> None
   ;;
 
-  (** Checks every position on the board, paired with every one of the eight directions,
-      and walks in that direction the length of a winning sequence. If all the cells it
-      visits are owned by a player, then that player has won.
-
-      Note that this is not an incredibly efficient algorithm, but it is a simple and
-      correct one. One could improve performance and just check all directions around the
-      most recently played position (and sum the sequence lengths of opposite directions).
-
-      Also note that if there are multiple win sequences, this algorithm will pick the
-      first one it finds. This is fine because game play stops when the first win-sequence
-      has been created. *)
+  (** Determine if any side of the board is empty and then compare scores
+      to check for a winner *)
   let check_winner t : Decision.t option =
     let player_one_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_one_side in
     let player_two_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_two_side in
@@ -114,6 +110,8 @@ module Game_state = struct
     else None
   ;;
 
+  (* Make sure the user has picked a valid square number. This is useful for testing,
+     but is unnecessary to check with the UI in place *)
   let is_valid_square t (square : int) =
     square >= 1 && square <= t.num_squares_per_side
   ;;
