@@ -17,29 +17,6 @@ module Players = struct
   ;;
 end
 
-module Move = struct
-  type t = int
-  [@@deriving sexp, compare, equal]
-
-  module Invalid_move = struct
-    type t = 
-    | Not_a_valid_square
-    | Square_is_empty
-    | Game_is_over
-    [@@deriving sexp, compare, equal]
-  end
-
-  let create ~move ~(game_state : Game_state.t)  : (t, Invalid_move.t) Result.t =
-    if move < 0 || move > game_state.num_squares_per_side
-    then Error Not_a_valid_square
-    else if game_state.is_square_empty move
-    then Error Square_is_empty
-    else if game_state.is_game_over
-    then Error Game_is_over
-    else Ok move
-
-end
-
 module Decision = struct
   type t =
     | Playing of { whose_turn : Players.t }
@@ -63,13 +40,21 @@ module Game_state = struct
     ; num_squares_per_side: int
     ; init_beads: int
     ; decision : Decision.t
-    ; last_move : Move.t option (* For animation purposes. *)
+    ; last_move : int option (* For animation purposes. *)
     }
   [@@deriving sexp, compare, equal]
 
   module Create_error = struct
     type t =
       | Board_too_big_or_small
+    [@@deriving sexp, compare]
+  end
+
+  module Move_error = struct
+    type t = 
+      | Game_is_over
+      | Not_a_valid_square
+      | Square_is_empty
     [@@deriving sexp, compare]
   end
 
@@ -126,14 +111,6 @@ module Game_state = struct
   let is_legal_cell_position { rows; columns; _ } ({ row; column } : Cell_position.t) =
     0 <= row && 0 <= column && row < rows && column < columns
   ;;
-
-  module Move_error = struct
-    type t =
-      | Game_is_over
-      | Not_a_valid_square
-      | Square_is_empty
-    [@@deriving sexp, compare]
-  end
 
   let make_move t (cell_position : Move.t) : (t, Move_error.t) Result.t =
     match t.decision with
