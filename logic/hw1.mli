@@ -13,18 +13,16 @@ type decision =
   | Tie
 
 type game_state =
-  { player_one_side : int array
-  ; player_two_side : int array
-  ; player_one_score : int
-  ; player_two_score : int
+  { board : int list
+  ; num_squares_per_side : int
   ; decision : decision
+  ; last_move : int option
   }
 
-type move = int
-
+val get_init_board : int -> int -> int list
 val initial_state : game_state
-val first_move : move
+val first_move : int
 val state_after_first_move : game_state
 val before_terminal_state : game_state
-val move_to_terminal_state : move
+val move_to_terminal_state : int
 val terminal_state : game_state

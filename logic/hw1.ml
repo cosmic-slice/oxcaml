@@ -14,14 +14,20 @@ type decision =
   | Tie
 
 type game_state =
-  { player_one_side : int array
-  ; player_two_side : int array
-  ; player_one_score : int
-  ; player_two_score : int
+  { board : int array
+  ; num_squares_per_side : int
   ; decision : decision
+  ; last_move : int option
   }
 
-type move = int
+let get_init_board num_squares_per_side init_beads =
+  let board = Array.make (2 * num_squares_per_side + 2) init_beads in
+  board.(0) <- 0;
+  board.(1) <- 0;
+  board
+;;
+
+(* type move = int *)
 
 (*=
 Initial state of a Mancala game. PlayerOne is the top row, PlayerTwo is the bottom
@@ -31,15 +37,15 @@ Initial state of a Mancala game. PlayerOne is the top row, PlayerTwo is the bott
   4 4 4 4 4 4
 *)
 let initial_state : game_state =
-  { player_one_side = Array.make num_squares_per_side init_beads
-  ; player_two_side = Array.make num_squares_per_side init_beads
-  ; player_one_score = 0
-  ; player_two_score = 0
+  { board = get_init_board num_squares_per_side init_beads
+  ; num_squares_per_side = 6
   ; decision = Playing { whose_turn = PlayerOne }
+  ; last_move = None
   }
 ;;
 
-let first_move : move = 4
+
+let first_move : int = 4
 
 (*=
 Second state after PlayerOne moves beads from square 4 
@@ -51,11 +57,10 @@ Second state after PlayerOne moves beads from square 4
 PlayerOne gets another turn because the last bead landed in his own goal
 *)
 let state_after_first_move : game_state =
-  { player_one_side = [| 5; 5; 5; 0; 4; 4 |]
-  ; player_two_side = [| 4; 4; 4; 4; 4; 4 |]
-  ; player_one_score = 1
-  ; player_two_score = 0
+  { board = [|1; 4; 4; 4; 4; 4 ; 4; 0; 4; 4; 0; 5; 5; 5|]
+  ; num_squares_per_side = 6
   ; decision = Playing { whose_turn = PlayerOne }
+  ; last_move = Some first_move
   }
 ;;
 
@@ -67,15 +72,14 @@ State before PlayerOne makes final move that ends the game
    2 0 4 0 1 1
 *)
 let before_terminal_state : game_state =
-  { player_one_side = [| 1; 0; 0; 0; 0; 0 |]
-  ; player_two_side = [| 2; 0; 4; 0; 1; 1 |]
-  ; player_one_score = 16
-  ; player_two_score = 23
+  { board = [|16; 2; 0; 4; 0; 1; 1; 23; 0; 0; 0; 0; 0; 1|]
+  ; num_squares_per_side = 6
   ; decision = Playing { whose_turn = PlayerOne }
+  ; last_move = Some 4
   }
 ;;
 
-let move_to_terminal_state : move = 1
+let move_to_terminal_state : int = 1
 
 (*=
 The final state of the game, where PlayerTwo has won
@@ -85,10 +89,9 @@ The final state of the game, where PlayerTwo has won
    0 0 0 0 0 0
 *)
 let terminal_state : game_state =
-  { player_one_side = [| 0; 0; 0; 0; 0; 0 |]
-  ; player_two_side = [| 0; 0; 0; 0; 0; 0 |]
-  ; player_one_score = 17
-  ; player_two_score = 31
+  { board = [|17; 0; 0; 0; 0; 0; 0; 31; 0; 0; 0; 0; 0; 0|]
+  ; num_squares_per_side = 6
   ; decision = Winner PlayerTwo
+  ; last_move = Some move_to_terminal_state
   }
 ;;
