@@ -1,25 +1,28 @@
 open! Core
+
 open Tictactoe_logic_library
 open Hw2_tictactoe_logic
 
-let ok_exn result = Result.ok result |> Option.value_exn
+let ok_exn result = Result.ok result |> Option.value_exn;;
 
-let%test "Example of a unit test (returns bool)" =
-  let state = Game_state.create ~winning_sequence_length:3 ~rows:3 ~columns:3 |> ok_exn in
+let%test "Unit test for initializing Mancala board (returns bool)" =
+  let state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 |> ok_exn in
   let expected_state : Game_state.t =
-    { board = Cell_position.Map.empty
-    ; rows = 3
-    ; columns = 3
-    ; winning_sequence_length = 3
-    ; decision = In_progress { whose_turn = X }
-    ; last_move = None
+    { player_one_side = Array.create ~len:6 4
+    ; player_two_side = Array.create ~len:6 4
+    ; player_one_score = 0
+    ; player_two_score = 0
+    ; num_squares_per_side = 6
+    ; init_beads = 4
+    ; decision = Playing { whose_turn = Players.PlayerOne }
+    ; last_move = None (* For animation purposes. *)
     }
   in
   Game_state.equal state expected_state
 ;;
 
-let create_and_print ~winning_sequence_length ~rows ~columns =
-  let result = Game_state.create ~winning_sequence_length ~rows ~columns in
+let create_and_print ~num_squares_per_side ~init_beads =
+  let result = Game_state.create ~num_squares_per_side ~init_beads in
   print_s [%sexp (result : (Game_state.t, Game_state.Create_error.t list) Result.t)]
 ;;
 
