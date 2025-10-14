@@ -1,4 +1,4 @@
-open! Core
+(* open! Core
 open Tictactoe_logic_library
 open Hw2_tictactoe_logic
 open Virtual_dom
@@ -120,4 +120,4 @@ let app =
   tic_tac_toe_board ~game_state ~set_game_state
 ;;
 
-let () = Bonsai_web.Start.start app
+let () = Bonsai_web.Start.start app *)

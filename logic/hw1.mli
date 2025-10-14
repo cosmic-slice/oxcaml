@@ -13,10 +13,10 @@ type decision =
   | Tie
 
 type game_state =
-  { player_one_side: int array
-  ; player_two_side: int array
-  ; player_one_score: int
-  ; player_two_score: int
+  { player_one_side : int array
+  ; player_two_side : int array
+  ; player_one_score : int
+  ; player_two_score : int
   ; decision : decision
   }
 
