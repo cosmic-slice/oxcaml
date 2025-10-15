@@ -127,7 +127,7 @@ module Game_state = struct
 
   (* Determine if any side of the board is empty and then compare scores
       to check for a winner *)
-  let check_winner t : t option =
+  let check_winner t : t =
     (* Slice the board array to get each player's side*)
     let player_one_side = Array.sub t.board (t.player_one_goal_index + 1) t.num_squares_per_side in
     let player_two_side = Array.sub t.board (t.player_two_goal_index + 1) t.num_squares_per_side in
@@ -152,9 +152,9 @@ module Game_state = struct
         else if get_score t Players.PlayerTwo > get_score t Players.PlayerOne then Decision.Winner Players.PlayerTwo
         else Decision.Tie
       in
-      Some { t with decision = final_decision }
+      { t with decision = final_decision }
     end
-    else None
+    else t
   ;;
 
   (* Make sure the user has picked a valid square number. This is useful for testing,
@@ -229,8 +229,16 @@ module Game_state = struct
       | Winner _ | Tie -> Error Game_is_over
       | Playing { whose_turn } ->
         (* If playing, get the number of beads at the specified index on the player's side*)
-        let num_beads = get_score t whose_turn in
-        distribute_beads t 
+        let adjusted_move = 
+        match whose_turn with
+        | Players.PlayerOne -> move
+        | Players.PlayerTwo -> Array.length t.board - move mod Array.length t.board in
+
+        let num_beads = t.board.(adjusted_move) in
+        let t' = distribute_beads t adjusted_move num_beads in
+        match t' with
+        | Ok t' -> Ok (check_winner t')
+        | Error err -> Error err
   ;;
   
 end
