@@ -23,7 +23,7 @@ type game_state =
 let get_init_board num_squares_per_side init_beads =
   let board = Array.make (2 * num_squares_per_side + 2) init_beads in
   board.(0) <- 0;
-  board.(1) <- 0;
+  board.(num_squares_per_side + 1) <- 0;
   board
 ;;
 

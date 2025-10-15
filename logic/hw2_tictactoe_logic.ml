@@ -7,9 +7,7 @@ module Players = struct
     | PlayerTwo
   [@@deriving sexp, compare, equal]
 
-  (* It's clearer to use type inference and just write:
-     [let opposite t =]
-  *)
+  (* Get opposite player using matching *)
   let opposite (t : t) : t =
     match t with
     | PlayerOne -> PlayerTwo
@@ -33,20 +31,19 @@ end
 
 module Game_state = struct
   type t =
-    { player_one_side: int array
-    ; player_two_side: int array
-    ; player_one_score: int
-    ; player_two_score: int
+    { board : int array
     ; num_squares_per_side: int
-    ; init_beads: int
+    ; player_one_goal_index: int
+    ; player_two_goal_index : int
     ; decision : Decision.t
-    ; last_move : int option (* For animation purposes. *)
+    ; last_move : int option 
     }
   [@@deriving sexp, compare, equal]
 
   module Create_error = struct
     type t =
       | Board_too_big_or_small
+      | Bead_count_invalid
     [@@deriving sexp, compare]
   end
 
@@ -58,67 +55,104 @@ module Game_state = struct
     [@@deriving sexp, compare]
   end
 
+  (* Method for generating a new board with set number of squares, and initial beads*)
+  let get_init_board num_squares_per_side init_beads =
+    let board = Array.make (2 * num_squares_per_side + 2) init_beads in
+    board.(0) <- 0; (* PlayerOne goal *)
+    board.(num_squares_per_side + 1) <- 0; (* PlayerTwo goal *)
+    board
+  ;;
+
   (* Create an instance of the board module with a set number of squares per 
      side and an initial number of beads *)
   let create ~num_squares_per_side ~init_beads : (t, Create_error.t list) Result.t =
-    let size_ok = num_squares_per_side < 20 && num_squares_per_side > 0 in
-    match size_ok with
-    | true ->
-      Ok
-        { player_one_side = Array.make num_squares_per_side init_beads
-        ; player_two_side = Array.make num_squares_per_side init_beads
-        ; num_squares_per_side = num_squares_per_side
-        ; init_beads = init_beads
-        ; player_one_score = 0
-        ; player_two_score = 0
-        ; decision = Playing { whose_turn = PlayerOne }
-        ; last_move = None
-        }
-    | _ ->
-      Error
-        ((if size_ok then [] else [ Create_error.Board_too_big_or_small ]))
+    let size_ok = num_squares_per_side >= 6 && num_squares_per_side <= 12 in
+    let num_beads_ok = init_beads >= 4 && init_beads <= 10 in
+    match size_ok, num_beads_ok with
+    | true, true -> 
+      Ok {
+        board = get_init_board num_squares_per_side init_beads
+      ; num_squares_per_side = num_squares_per_side
+      ; player_one_goal_index = 0
+      ; player_two_goal_index = num_squares_per_side + 1
+      ; decision = Playing {whose_turn = Players.PlayerOne}
+      ; last_move = None
+      }
+    | true, false ->
+      Error [Create_error.Bead_count_invalid]
+    | false, true ->
+      Error [Create_error.Board_too_big_or_small]
+    | false, false ->
+      Error [Create_error.Bead_count_invalid ; Create_error.Board_too_big_or_small]
+  ;;
+
+  (* Check if a specified index is a goal index or not*)
+  let is_not_goal t square_index = 
+    square_index != t.player_one_goal_index && square_index != t.player_two_goal_index
   ;;
 
   (* Check if a square is empty. The square that's checked belongs to the current
      player*)
-  let is_square_empty t square_index : bool =
-    if t.decision = Playing { whose_turn = Players.PlayerOne }
-      then t.player_one_side.(square_index) = 0
-      else t.player_two_side.(square_index) = 0
+  let is_square_empty t square_index =
+    if is_not_goal t square_index && square_index >= 0 && square_index <= Array.length t.board then
+      Ok (t.board.(square_index) = 0)
+    else Error (Move_error.Not_a_valid_square)
   ;;
 
-  let is_game_over t = Decision.is_game_over t.decision;;
+  (* Check if the game is over *)
+  let is_game_over t = 
+    Decision.is_game_over t.decision
+  ;;
 
+  (* Get the score of the player passed to the method *)
+  let get_score t (player : Players.t) =
+    match player with
+    | Players.PlayerOne -> t.board.(t.player_one_goal_index)
+    | Players.PlayerTwo -> t.board.(t.player_two_goal_index)
+  ;;
+
+  (* Set score for player passed to the method *)
+  let change_score t (player : Players.t) amount =
+    match player with
+    | Players.PlayerOne -> t.board.(t.player_one_goal_index) <- (get_score t Players.PlayerOne) + amount
+    | Players.PlayerTwo -> t.board.(t.player_two_goal_index) <- (get_score t Players.PlayerTwo) + amount
+  ;;
+
+  (* Figure out who the current player is *)
   let get_current_player t =
     match t.decision with
-    | Playing { whose_turn } -> Some whose_turn
-    | Winner _ | Tie -> None
+    | Playing { whose_turn } -> whose_turn
+    | Winner _ | Tie -> failwith "Game is over"
   ;;
 
-  (** Determine if any side of the board is empty and then compare scores
+  (* Determine if any side of the board is empty and then compare scores
       to check for a winner *)
   let check_winner t : t option =
-    let player_one_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_one_side in
-    let player_two_total = Array.fold_left (fun acc x -> acc + x) 0 t.player_two_side in
+    (* Slice the board array to get each player's side*)
+    let player_one_side = Array.sub t.board (t.player_one_goal_index + 1) t.num_squares_per_side in
+    let player_two_side = Array.sub t.board (t.player_two_goal_index + 1) t.num_squares_per_side in
+
+    (* Fold each side to get the total number of beads *)
+    let player_one_total = Array.fold_left (fun acc x -> acc + x) 0 player_one_side in
+    let player_two_total = Array.fold_left (fun acc x -> acc + x) 0 player_two_side in
+
+    (* If either side is empty, the game is over*)
     if player_one_total = 0 || player_two_total = 0 then begin
-      let final_player_one_score = t.player_one_score + player_one_total in
-      let final_player_two_score = t.player_two_score + player_two_total in
-      
+      (* Move all of beads on each player's side to their goal *)
+      change_score t Players.PlayerOne player_one_total;
+      change_score t Players.PlayerTwo player_two_total;
+
       (* Clear each side of the board *)
-      Array.fill t.player_one_side 0 (Array.length t.player_one_side) 0;
-      Array.fill t.player_two_side 0 (Array.length t.player_two_side) 0;
+      Array.fill t.board (t.player_one_goal_index + 1) t.num_squares_per_side 0;
+      Array.fill t.board (t.player_two_goal_index + 1) t.num_squares_per_side 0;
       
       (* Determine winner and return new state *)
       let final_decision = 
-        if final_player_one_score > final_player_two_score then Decision.Winner Players.PlayerOne
-        else if final_player_two_score > final_player_one_score then Decision.Winner Players.PlayerTwo
+        if get_score t Players.PlayerOne > get_score t Players.PlayerTwo then Decision.Winner Players.PlayerOne
+        else if get_score t Players.PlayerTwo > get_score t Players.PlayerOne then Decision.Winner Players.PlayerTwo
         else Decision.Tie
       in
-      Some { t with 
-            player_one_score = final_player_one_score
-          ; player_two_score = final_player_two_score
-          ; decision = final_decision
-          }
+      Some { t with decision = final_decision }
     end
     else None
   ;;
@@ -129,74 +163,60 @@ module Game_state = struct
     square >= 0 && square < t.num_squares_per_side
   ;;
 
-  let rec distribute_beads t (side : Players.t) (index : int) (beads_remaining : int) =
-    if beads_remaining = 1 then (
-      match t.decision with
-      | Playing { whose_turn } ->
-        if whose_turn = Players.PlayerOne && index < 0 then (
-          (* If PlayerOne has ended on his goal, he gets an extra turn *)
-          let t' = { t with player_one_score = t.player_one_score + 1; 
-                            decision = Playing { whose_turn = Players.PlayerOne } } in
-          Ok t'
-        ) else if whose_turn = Players.PlayerTwo && index > t.num_squares_per_side - 1 then (
-          (* If PlayerTwo has ended on his goal, he gets an extra turn *)
-          let t' = { t with player_two_score = t.player_two_score + 1;
-                            decision = Playing { whose_turn = Players.PlayerTwo } } in
-          Ok t'
-        ) else if whose_turn = side && 
-          ((whose_turn = Players.PlayerTwo && t.player_two_side.(index) = 0) || (whose_turn = Players.PlayerOne && t.player_one_side.(index) = 0)) then (
-          (* If a player ends on his side AND on an empty tile, he steals the opponent's beads *)
-          let beads_to_steal = t.player_one_side.(index) + t.player_two_side.(index) + 1 in
-          let t' =
-            if whose_turn = Players.PlayerOne then (
-              t.player_one_side.(index) <- 0;
-              t.player_two_side.(index) <- 0;
-              { t with player_one_score = t.player_one_score + beads_to_steal; decision = Playing { whose_turn = Players.PlayerTwo } }
-            ) else (
-              t.player_one_side.(index) <- 0;
-              t.player_two_side.(index) <- 0;
-              { t with player_two_score = t.player_two_score + beads_to_steal; decision = Playing { whose_turn = Players.PlayerOne } }
-            )
-          in
-          Ok t'
-        ) else (
-          (* If no special case is triggered, just increment bead count in current index *)
-          let next_turn = Players.opposite whose_turn in
-          if side = Players.PlayerOne then
-            t.player_one_side.(index) <- t.player_one_side.(index) + 1
-          else
-            t.player_two_side.(index) <- t.player_two_side.(index) + 1;
-          Ok { t with decision = Playing { whose_turn = next_turn } }
-        )
-      | Tie | Winner _ -> Error Move_error.Game_is_over
-    )
-    else
-      match t.decision with
-      | Playing _ ->
-        (* If on PlayerOne's side, go around the board counter-clockwise by decrementing
-           the index *)
-        if side = Players.PlayerOne then (
-          (* If index < 0 (i.e. goal reached) increment and loop to other side *)
-          if index < 0 then (
-            let t' = { t with player_one_score = t.player_one_score + 1 } in
-            distribute_beads t' Players.PlayerTwo 0 (beads_remaining - 1)
-          ) else (
-            t.player_one_side.(index) <- t.player_one_side.(index) + 1;
-            distribute_beads t side (index - 1) (beads_remaining - 1)
-          )
-        )
+  (* Determine whether the index provided is the opposite player's goal *)
+  let is_opposite_players_goal t index =
+    let current_player = get_current_player t in 
+    match current_player with
+    | Players.PlayerOne -> index = t.player_two_goal_index
+    | Players.PlayerTwo -> index = t.player_one_goal_index
+  ;;
+
+  (* Determine whether the index provided is the player's goal *)
+  let is_players_goal t index =
+    let current_player = get_current_player t in 
+    match current_player with
+    | Players.PlayerOne -> index = t.player_one_goal_index
+    | Players.PlayerTwo -> index = t.player_two_goal_index
+  ;;
+
+  let do_steal t index current_player =
+    let opposite_index = (Array.length t.board - index) mod Array.length t.board in
+    let beads_stolen = t.board.(opposite_index) + 1 in
+    t.board.(index) <- 0;
+    t.board.(opposite_index) <- 0;
+
+    change_score t current_player beads_stolen
+
+  (* Recursively distribute the beads around the board*)
+  let rec distribute_beads t (index : int) (beads_remaining : int) =
+    match t.decision with 
+    | Playing _ -> 
+      if beads_remaining = 0 then
+        (* Determine who the current player is *)
+        let current_player = get_current_player t in
+        (* If the player landed in his own goal, he gets an extra turn *)
+        if is_players_goal t index then
+          Ok { t with decision = Playing { whose_turn = current_player } }
         else (
-          (* If on PlayerTwo's side, go around the board clockwise by incrementing
-           the index *)
-          if index > t.num_squares_per_side - 1 then (
-            let t' = { t with player_two_score = t.player_two_score + 1 } in
-            distribute_beads t' Players.PlayerOne (t.num_squares_per_side - 1) (beads_remaining - 1)
-          ) else (
-            t.player_two_side.(index) <- t.player_two_side.(index) + 1;
-            distribute_beads t side (index + 1) (beads_remaining - 1)
-          )
+          (* If the last bead was placed on an empty square, do steal*)
+          if t.board.(index) = 1 then 
+            do_steal t index current_player;
+
+          (* Change turn to other player's side *)
+          Ok { t with decision = Playing { whose_turn = (Players.opposite current_player) } }
         )
-      | _ -> Error Move_error.Game_is_over
+      else
+        (* Calculate the next index to add beads to *)
+        let next_index = (index + 1) mod Array.length t.board in
+        (* If the player is over the other player's goal, skip it *)
+        if is_opposite_players_goal t next_index then
+          distribute_beads t next_index beads_remaining
+        else (
+          (* Move a bead over to the next square *)
+          t.board.(next_index) <- t.board.(next_index) + 1;
+          distribute_beads t next_index (beads_remaining - 1)
+        )
+    | Tie | Winner _ -> Error (Move_error.Game_is_over)
   ;;
 
   (* Make a move on the board. The moves are represented as values from 1 to
