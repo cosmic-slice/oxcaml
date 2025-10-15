@@ -1,6 +1,10 @@
 open! Core
 open! Stdlib
 
+(* This is an implementation of Mancala in OCaml. The board is designed as an
+   array that the players loop around. The number of initial beads is variable
+   and so is the number of squares on each side. PlayerOne's goal is located
+   at index 0 and PlayerTwo's goal is at num_squares_per_side + 1 *)
 module Players = struct
   type t =
     | PlayerOne
@@ -94,9 +98,7 @@ module Game_state = struct
   (* Check if a square is empty. The square that's checked belongs to the current
      player*)
   let is_square_empty t square_index =
-    if is_not_goal t square_index && square_index >= 0 && square_index <= Array.length t.board then
-      Ok (t.board.(square_index) = 0)
-    else Error (Move_error.Not_a_valid_square)
+    t.board.(square_index) = 0
   ;;
 
   (* Check if the game is over *)
@@ -181,7 +183,7 @@ module Game_state = struct
 
   (* Steal all beads from current square and the one opposite it *)
   let do_steal t index current_player =
-    let opposite_index = (Array.length t.board - index) mod Array.length t.board in
+    let opposite_index = Array.length t.board - index in
     let beads_stolen = t.board.(index) + t.board.(opposite_index) in
     t.board.(index) <- 0;
     t.board.(opposite_index) <- 0;
@@ -231,14 +233,20 @@ module Game_state = struct
         (* If playing, get the number of beads at the specified index on the player's side*)
         let adjusted_move = 
         match whose_turn with
-        | Players.PlayerOne -> move
-        | Players.PlayerTwo -> Array.length t.board - move mod Array.length t.board in
+        | Players.PlayerOne -> Array.length t.board - move
+        | Players.PlayerTwo -> move in
 
         let num_beads = t.board.(adjusted_move) in
-        let t' = distribute_beads t adjusted_move num_beads in
-        match t' with
-        | Ok t' -> Ok (check_winner t')
-        | Error err -> Error err
+        if is_square_empty t adjusted_move then
+          Error (Move_error.Square_is_empty)
+        else (
+          t.board.(adjusted_move) <- 0;
+          
+          let t' = distribute_beads t adjusted_move num_beads in
+          match t' with
+          | Ok t' -> Ok (check_winner t')
+          | Error err -> Error err
+        )
   ;;
   
 end
