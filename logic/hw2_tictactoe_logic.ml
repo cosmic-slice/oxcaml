@@ -159,8 +159,8 @@ module Game_state = struct
 
   (* Make sure the user has picked a valid square number. This is useful for testing,
      but is unnecessary to check with the UI in place *)
-  let is_valid_square t (square : int) =
-    square >= 0 && square < t.num_squares_per_side
+  let is_valid_move t (square : int) =
+    square >= 1 && square <= t.num_squares_per_side
   ;;
 
   (* Determine whether the index provided is the opposite player's goal *)
@@ -179,13 +179,15 @@ module Game_state = struct
     | Players.PlayerTwo -> index = t.player_two_goal_index
   ;;
 
+  (* Steal all beads from current square and the one opposite it *)
   let do_steal t index current_player =
     let opposite_index = (Array.length t.board - index) mod Array.length t.board in
-    let beads_stolen = t.board.(opposite_index) + 1 in
+    let beads_stolen = t.board.(index) + t.board.(opposite_index) in
     t.board.(index) <- 0;
     t.board.(opposite_index) <- 0;
 
     change_score t current_player beads_stolen
+  ;;
 
   (* Recursively distribute the beads around the board*)
   let rec distribute_beads t (index : int) (beads_remaining : int) =
@@ -223,42 +225,12 @@ module Game_state = struct
      num_squares_per_side and correspond to the squares on each player's side *)
   let make_move t (move : int) : (t, Move_error.t) Result.t =
     match t.decision with
-      | _ when not (is_valid_square t move) -> Error Move_error.Not_a_valid_square
+      | _ when not (is_valid_move t move) -> Error Move_error.Not_a_valid_square
       | Winner _ | Tie -> Error Game_is_over
       | Playing { whose_turn } ->
         (* If playing, get the number of beads at the specified index on the player's side*)
-        let num_beads =
-          match whose_turn with
-            | Players.PlayerOne -> t.player_one_side.(move)
-            | Players.PlayerTwo -> t.player_two_side.(move)
-            in
-            (* If the square is empty, return Square_is_empty error *)
-            if num_beads = 0 then Error Move_error.Square_is_empty
-            else (
-              (* Take out all beads from selected square and distribute beads over board *)
-              (match whose_turn with
-               | Players.PlayerOne -> (
-                t.player_one_side.(move) <- 0;
-                match distribute_beads t whose_turn (move - 1) num_beads with
-                | Ok t' -> 
-                  let t'' = { t' with last_move = Some move } in
-                  (* Check if the game is over *)
-                  (match check_winner t'' with
-                  | Some final_state -> Ok final_state
-                  | None -> Ok t'')
-                | Error e -> Error e)
-               | Players.PlayerTwo -> (
-                t.player_two_side.(move) <- 0;
-                match distribute_beads t whose_turn (move + 1) num_beads with
-                | Ok t' -> 
-                  let t'' = { t' with last_move = Some move } in
-                  (* Check if the game is over *)
-                  (match check_winner t'' with
-                  | Some final_state -> Ok final_state
-                  | None -> Ok t'')
-                | Error e -> Error e)
-              )
-            )
+        let num_beads = get_score t whose_turn in
+        distribute_beads t 
   ;;
   
 end
