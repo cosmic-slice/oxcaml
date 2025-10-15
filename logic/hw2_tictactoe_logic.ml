@@ -184,6 +184,7 @@ module Game_state = struct
   (* Steal all beads from current square and the one opposite it *)
   let do_steal t index current_player =
     let opposite_index = Array.length t.board - index in
+    
     let beads_stolen = t.board.(index) + t.board.(opposite_index) in
     t.board.(index) <- 0;
     t.board.(opposite_index) <- 0;
