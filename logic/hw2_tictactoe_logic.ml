@@ -180,6 +180,7 @@ module Game_state = struct
     | Players.PlayerTwo -> index = get_goal_index t Players.PlayerTwo
   ;;
 
+  (* Determine whether an index is on the player's side or not *)
   let on_players_side t index current_player =
     match current_player with
     | Players.PlayerOne -> index > get_goal_index t Players.PlayerTwo
