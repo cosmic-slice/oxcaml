@@ -21,19 +21,18 @@ end
 
 module Game_state : sig
   type t =
-    { player_one_side : int array
-    ; player_two_side : int array
-    ; player_one_score : int
-    ; player_two_score : int
+    { board : int array
     ; num_squares_per_side : int
-    ; init_beads : int
     ; decision : Decision.t
     ; last_move : int option (* For animation purposes. *)
     }
   [@@deriving sexp, compare, equal]
 
   module Create_error : sig
-    type t = Board_too_big_or_small [@@deriving sexp, compare]
+    type t =
+      | Board_too_big_or_small
+      | Bead_count_invalid
+    [@@deriving sexp, compare]
   end
 
   module Move_error : sig
@@ -44,16 +43,26 @@ module Game_state : sig
     [@@deriving sexp, compare]
   end
 
+  val get_init_board : int -> int -> int array
+  val get_goal_index : t -> Players.t -> int
+
   val create
     :  num_squares_per_side:int
     -> init_beads:int
     -> (t, Create_error.t list) Result.t
 
+  val is_not_goal : t -> int -> bool
   val is_square_empty : t -> int -> bool
   val is_game_over : t -> bool
-  val get_current_player : t -> Players.t option
-  val check_winner : t -> t option
-  val is_valid_square : t -> int -> bool
-  val distribute_beads : t -> Players.t -> int -> int -> (t, Move_error.t) result
+  val get_score : t -> Players.t -> int
+  val change_score : t -> Players.t -> int -> unit
+  val get_current_player : t -> Players.t
+  val do_gameover : t -> t
+  val is_valid_move : t -> int -> bool
+  val is_opposite_players_goal : t -> int -> bool
+  val is_players_goal : t -> int -> bool
+  val on_players_side : t -> int -> Players.t -> bool
+  val do_steal : t -> int -> Players.t -> unit
+  val distribute_beads : t -> int -> int -> (t, Move_error.t) result
   val make_move : t -> int -> (t, Move_error.t) Result.t
 end

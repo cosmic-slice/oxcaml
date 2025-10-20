@@ -71,6 +71,7 @@ module Game_state = struct
     match player with
     | PlayerOne -> 0
     | PlayerTwo -> t.num_squares_per_side + 1
+  ;;
 
   (* Create an instance of the board module with a set number of squares per 
      side and an initial number of beads *)
@@ -85,15 +86,16 @@ module Game_state = struct
         ; decision = Playing { whose_turn = Players.PlayerOne }
         ; last_move = None
         }
-    | true, false -> Error [ Create_error.Bead_count_invalid ]
-    | false, true -> Error [ Create_error.Board_too_big_or_small ]
-    | false, false ->
-      Error [ Create_error.Bead_count_invalid; Create_error.Board_too_big_or_small ]
+    | _ ->
+      Error
+        ((if size_ok then [] else [ Create_error.Board_too_big_or_small ])
+         @ if num_beads_ok then [] else [ Create_error.Bead_count_invalid ])
   ;;
 
   (* Check if a specified index is a goal index or not*)
   let is_not_goal t square_index =
-    square_index != get_goal_index t Players.PlayerOne && square_index != get_goal_index t Players.PlayerTwo
+    square_index != get_goal_index t Players.PlayerOne
+    && square_index != get_goal_index t Players.PlayerTwo
   ;;
 
   (* Check if a square is empty. The square that's checked belongs to the current
@@ -114,9 +116,11 @@ module Game_state = struct
   let change_score t (player : Players.t) amount =
     match player with
     | Players.PlayerOne ->
-      t.board.(get_goal_index t Players.PlayerOne) <- get_score t Players.PlayerOne + amount
+      t.board.(get_goal_index t Players.PlayerOne)
+      <- get_score t Players.PlayerOne + amount
     | Players.PlayerTwo ->
-      t.board.(get_goal_index t Players.PlayerTwo) <- get_score t Players.PlayerTwo + amount
+      t.board.(get_goal_index t Players.PlayerTwo)
+      <- get_score t Players.PlayerTwo + amount
   ;;
 
   (* Figure out who the current player is *)
@@ -184,16 +188,20 @@ module Game_state = struct
   let on_players_side t index current_player =
     match current_player with
     | Players.PlayerOne -> index > get_goal_index t Players.PlayerTwo
-    | Players.PlayerTwo -> (index > get_goal_index t Players.PlayerOne) && (index < get_goal_index t Players.PlayerTwo)
+    | Players.PlayerTwo ->
+      index > get_goal_index t Players.PlayerOne
+      && index < get_goal_index t Players.PlayerTwo
+  ;;
 
   (* Steal all beads from current square and the one opposite it *)
   let do_steal t index current_player =
-    if on_players_side t index current_player then
+    if on_players_side t index current_player
+    then (
       let opposite_index = Array.length t.board - index in
       let beads_stolen = t.board.(index) + t.board.(opposite_index) in
       t.board.(index) <- 0;
       t.board.(opposite_index) <- 0;
-      change_score t current_player beads_stolen
+      change_score t current_player beads_stolen)
   ;;
 
   (* Recursively distribute the beads around the board*)
@@ -239,7 +247,7 @@ module Game_state = struct
         | Players.PlayerOne -> Array.length t.board - move
         | Players.PlayerTwo -> move
       in
-      let t = { t with board = Array.copy t.board } in
+      let t = { t with board = Array.copy t.board; last_move = Some move } in
       let num_beads = t.board.(adjusted_move) in
       if is_square_empty t adjusted_move
       then Error Move_error.Square_is_empty
