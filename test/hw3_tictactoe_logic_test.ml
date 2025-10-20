@@ -1,11 +1,10 @@
 open! Core
-
 open Tictactoe_logic_library
 open Hw2_tictactoe_logic
 
-let ok_exn result = Result.ok result |> Option.value_exn;;
+let ok_exn result = Result.ok result |> Option.value_exn
 
-let%test "Unit test for initializing Mancala board (returns bool)" =
+let%expect_test "Unit test for initializing Mancala board (returns bool)" =
   let state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 |> ok_exn in
   let expected_state : Game_state.t =
     { player_one_side = Array.create ~len:6 4
