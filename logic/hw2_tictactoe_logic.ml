@@ -195,15 +195,15 @@ module Game_state = struct
 
   (* Steal all beads from current square and the one opposite it *)
   let do_steal t index current_player =
-    if on_players_side t index current_player then (
+    if on_players_side t index current_player
+    then (
       let opposite_index = Array.length t.board - index in
-      if t.board.(opposite_index) > 0 then (
+      if t.board.(opposite_index) > 0
+      then (
         let beads_stolen = t.board.(index) + t.board.(opposite_index) in
         t.board.(index) <- 0;
         t.board.(opposite_index) <- 0;
-        change_score t current_player beads_stolen
-      )
-    )
+        change_score t current_player beads_stolen))
   ;;
 
   (* Recursively distribute the beads around the board*)
@@ -237,9 +237,7 @@ module Game_state = struct
   ;;
 
   (* Get a list of all possible moves *)
-  let get_all_moves t =
-    List.init t.num_squares_per_side (fun i -> (i + 1))
-  ;;
+  let get_all_moves t = List.init t.num_squares_per_side (fun i -> i + 1)
 
   (* Make a move on the board. The moves are represented as values from 1 to
      num_squares_per_side and correspond to the squares on each player's side *)

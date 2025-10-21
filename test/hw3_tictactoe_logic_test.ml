@@ -119,15 +119,16 @@ let%expect_test "Game_state.make_move fails if player chooses an empty square" =
 
 let%expect_test "Game_state.make_move where PlayerOne steals a bead" =
   let steal_move = 4 in
-  let pre_steal_state : Game_state.t = 
-    { board = [|23; 0; 0; 1; 0; 0; 0; 23; 0; 0; 1; 0; 0; 0|]
+  let pre_steal_state : Game_state.t =
+    { board = [| 23; 0; 0; 1; 0; 0; 0; 23; 0; 0; 1; 0; 0; 0 |]
     ; num_squares_per_side = 6
-    ; decision = Playing { whose_turn = Players.PlayerOne}
+    ; decision = Playing { whose_turn = Players.PlayerOne }
     ; last_move = Some 6
-  } in
+    }
+  in
   make_move_and_print pre_steal_state steal_move;
-  [%expect 
-  {|
+  [%expect
+    {|
     (Ok
      ((board (25 0 0 0 0 0 0 23 0 0 0 0 0 0)) (num_squares_per_side 6)
       (decision (Winner PlayerOne)) (last_move (4)))) |}]
@@ -137,35 +138,30 @@ let pretty_print_board (state : Game_state.t) =
   (* Get each player's score *)
   let score_1 = string_of_int (Game_state.get_score state Players.PlayerOne) in
   let score_2 = string_of_int (Game_state.get_score state Players.PlayerTwo) in
-  
   (* Initialize row string variables and halfway point *)
   let halfway_index = (Array.length state.board / 2) - 1 in
   let bottom_row = ref "" in
   let top_row = ref "" in
-
   (* Pad top and bottom rows based on length of PlayerOne's score *)
-  top_row := !top_row ^ String.make (String.length score_1 ) ' ' ^ " ";
+  top_row := !top_row ^ String.make (String.length score_1) ' ' ^ " ";
   bottom_row := !bottom_row ^ String.make (String.length score_1) ' ' ^ " ";
-  
   (* Iterate through elements on each side of the array *)
   for i = 1 to halfway_index do
     (* Get next element of row and append it to the strings *)
     let bottom_val = string_of_int state.board.(i) ^ " " in
     let top_val = string_of_int state.board.(Array.length state.board - i) ^ " " in
-    
     bottom_row := !bottom_row ^ bottom_val;
     top_row := !top_row ^ top_val;
-    
     (* Add padding to the shorter row so they have the same length *)
     let length_diff = String.length !top_row - String.length !bottom_row in
-    if length_diff > 0 then
-      bottom_row := !bottom_row ^ String.make length_diff ' '
-    else if length_diff < 0 then
-      top_row := !top_row ^ String.make (-length_diff) ' '
+    if length_diff > 0
+    then bottom_row := !bottom_row ^ String.make length_diff ' '
+    else if length_diff < 0
+    then top_row := !top_row ^ String.make (-length_diff) ' '
   done;
-  
-  let middle_row = score_1 ^ String.make (String.length !top_row - String.length score_1) ' ' ^ score_2 in
-  
+  let middle_row =
+    score_1 ^ String.make (String.length !top_row - String.length score_1) ' ' ^ score_2
+  in
   (* Print all of the rows from top to bottom *)
   print_endline !top_row;
   print_endline middle_row;
@@ -203,10 +199,10 @@ let%expect_test "Game_state.make_move: PlayerOne makes two moves in a row" =
     |}]
 ;;
 
-let%expect_test "Game_state.make_move: Shortest possible game (10 moves) where PlayerOne wins" =
-  print_final_state
-    initial_standard_board
-    [ 4; 1; 2; 3; 6; 4; 6; 5; 6; 6];
+let%expect_test
+    "Game_state.make_move: Shortest possible game (10 moves) where PlayerOne wins"
+  =
+  print_final_state initial_standard_board [ 4; 1; 2; 3; 6; 4; 6; 5; 6; 6 ];
   [%expect
     {|
        0 0 0 0 0 0
@@ -219,9 +215,48 @@ let%expect_test "Game_state.make_move: Shortest possible game (10 moves) where P
 let%expect_test "Game_state.make_move: A game where PlayerTwo wins" =
   print_final_state
     initial_standard_board
-    [ 1; 2; 3; 4; 5; 6; 1; 2; 3; 4; 5; 6; 1; 2; 4; 5; 6; 1; 2; 3;
-      4; 5; 6; 1; 2; 3; 4; 5; 6; 1; 3; 4; 6; 1; 4; 2; 1; 3; 3; 6;
-      4];
+    [ 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 1
+    ; 2
+    ; 4
+    ; 5
+    ; 6
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 1
+    ; 3
+    ; 4
+    ; 6
+    ; 1
+    ; 4
+    ; 2
+    ; 1
+    ; 3
+    ; 3
+    ; 6
+    ; 4
+    ];
   [%expect
     {|
        0 0 0 0 0 0
@@ -234,8 +269,44 @@ let%expect_test "Game_state.make_move: A game where PlayerTwo wins" =
 let%expect_test "Game_state.make_move: A game that ends in a tie" =
   print_final_state
     initial_standard_board
-    [ 2; 5; 3; 3; 1; 3; 4; 3; 6; 2; 4; 6; 5; 5; 3; 3; 2; 2; 1; 
-      6; 3; 1; 2; 3; 5; 4; 4; 1; 3; 5; 5; 6; 3; 3; 6; 6; 4];
+    [ 2
+    ; 5
+    ; 3
+    ; 3
+    ; 1
+    ; 3
+    ; 4
+    ; 3
+    ; 6
+    ; 2
+    ; 4
+    ; 6
+    ; 5
+    ; 5
+    ; 3
+    ; 3
+    ; 2
+    ; 2
+    ; 1
+    ; 6
+    ; 3
+    ; 1
+    ; 2
+    ; 3
+    ; 5
+    ; 4
+    ; 4
+    ; 1
+    ; 3
+    ; 5
+    ; 5
+    ; 6
+    ; 3
+    ; 3
+    ; 6
+    ; 6
+    ; 4
+    ];
   [%expect
     {|
        0 0 0 0 0 0
@@ -248,10 +319,82 @@ let%expect_test "Game_state.make_move: A game that ends in a tie" =
 let%expect_test "Game_state.make_move: Test case for huge mancala board" =
   print_final_state
     initial_big_board
-    [ 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
-      1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
-      1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
-      1; 2; 3; 4; 6; 1; 2; 5; 1; 2; 3; 4; 5; 3; 1;];
+    [ 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 7
+    ; 8
+    ; 9
+    ; 10
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 7
+    ; 8
+    ; 9
+    ; 10
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 7
+    ; 8
+    ; 9
+    ; 10
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 7
+    ; 8
+    ; 9
+    ; 10
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 7
+    ; 8
+    ; 9
+    ; 10
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 6
+    ; 7
+    ; 8
+    ; 9
+    ; 10
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 6
+    ; 1
+    ; 2
+    ; 5
+    ; 1
+    ; 2
+    ; 3
+    ; 4
+    ; 5
+    ; 3
+    ; 1
+    ];
   [%expect
     {|
        0 1 0 1 0 0  15 2  13 1

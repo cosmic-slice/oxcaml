@@ -1,73 +1,77 @@
-(* open! Core
+open! Core
 open Tictactoe_logic_library
 open Hw2_tictactoe_logic
 open Hw4_alpha_beta_search
 open Hw3_tictactoe_logic_test
 
-type player_kind_or_empty =
-  | E
-  | O
-  | X
-
-let print_computer_move (board_as_lists : player_kind_or_empty list list) max_depth =
-  let board : Player_kind.t Cell_position.Map.t =
-    List.mapi board_as_lists ~f:(fun row row_as_list ->
-      List.filter_mapi row_as_list ~f:(fun col player_kind_or_empty ->
-        let player_kind : Player_kind.t option =
-          match player_kind_or_empty with
-          | E -> None
-          | O -> Some O
-          | X -> Some X
-        in
-        Option.map player_kind ~f:(fun player_kind : (Cell_position.t * Player_kind.t) ->
-          { row; column = col }, player_kind)))
-    |> List.concat
-    |> Cell_position.Map.of_alist_exn
-  in
-  let whose_turn : Player_kind.t = if Map.length board mod 2 = 0 then X else O in
+(* let print_computer_move board turn max_depth =
   let state : Game_state.t =
     { board
-    ; rows = 3
-    ; columns = 3
-    ; winning_sequence_length = 3
-    ; decision = In_progress { whose_turn }
+    ; num_squares_per_side = 6
+    ; decision = Playing { whose_turn = turn }
     ; last_move = None
     }
   in
   let move = alpha_beta state ~depth:max_depth |> Option.value_exn in
   let next_state = Game_state.make_move state move |> ok_exn in
-  print_s [%message "Computer chooses this move" (move : Move.t)];
+  print_s [%message "Computer chooses this move" (move : int)];
   print_endline "\nThis transitions the game from this state:";
   pretty_print_board state;
   print_endline "\nTo this state:";
   pretty_print_board next_state
+;; *)
+
+let rec print_full_game (state : Game_state.t) max_depth index =
+  let still_going =
+    match state.decision with
+    | Playing _ -> true
+    | _ -> false
+  in
+  if still_going && index > 0
+  then (
+    let move = alpha_beta state ~depth:max_depth |> Option.value_exn in
+    let next_state = Game_state.make_move state move |> ok_exn in
+    print_s [%message "Computer chooses this move" (move : int) (index : int)];
+    print_endline "\nThis transitions the game from this state:";
+    pretty_print_board state;
+    print_endline "\nTo this state:";
+    pretty_print_board next_state;
+    print_full_game next_state max_depth (index - 1))
 ;;
 
-let%expect_test "returns exactly one cell" =
-  print_computer_move [ [ O; O; X ]; [ X; X; O ]; [ O; X; E ] ] 1;
+let%expect_test "full game simulation" =
+  let init_state : Game_state.t =
+    { board = [| 0; 4; 4; 4; 4; 4; 4; 0; 4; 4; 4; 4; 4; 4 |]
+    ; num_squares_per_side = 6
+    ; decision = Playing { whose_turn = Players.PlayerOne }
+    ; last_move = None (* For animation purposes. *)
+    }
+  in
+  print_full_game init_state 3 10;
+  [%expect{| |}];
+;;
+
+(* let%expect_test "returns exactly one cell" =
+  print_computer_move [| 0; 4; 4; 4; 4; 4; 4; 0; 4; 4; 4; 4; 4; 4 |] PlayerOne 1;
   [%expect
     {|
-    ("Computer chooses this move" (move ((row 2) (column 2))))
+     ("Computer chooses this move" (move 4))
 
-    This transitions the game from this state:
-    O|O|X
-    -----
-    X|X|O
-    -----
-    O|X|
-    (In_progress (whose_turn X))
+     This transitions the game from this state:
+       4 4 4 4 4 4
+     0             0
+       4 4 4 4 4 4
+     (Playing (whose_turn PlayerOne))
 
-    To this state:
-    O|O|X
-    -----
-    X|X|O
-    -----
-    O|X|X
-    Stalemate
+     To this state:
+       5 5 5 0 4 4
+     1             0
+       4 4 4 4 4 4
+     (Playing (whose_turn PlayerOne))
     |}]
-;;
+;; *)
 
-let%expect_test "X finds an immediate winning move" =
+(*let%expect_test "X finds an immediate winning move" =
   print_computer_move [ [ E; E; O ]; [ O; X; X ]; [ E; X; O ] ] 1;
   [%expect
     {|
