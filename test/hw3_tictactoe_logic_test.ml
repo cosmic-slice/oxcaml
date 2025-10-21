@@ -73,9 +73,9 @@ let initial_standard_board =
   Game_state.create ~num_squares_per_side:6 ~init_beads:4 |> ok_exn
 ;;
 
-(*let initial_big_board =
+let initial_big_board =
   Game_state.create ~num_squares_per_side:10 ~init_beads:10 |> ok_exn
-;;*)
+;;
 
 let%expect_test "Game_state.make_move from PlayerOne's cell 5 on standard board" =
   make_move_and_print initial_standard_board 5;
@@ -192,184 +192,72 @@ let%expect_test "Game_state.make_move: PlayerOne moves beads from square 4" =
     |}]
 ;;
 
-(*let%expect_test "Game_state.make_move: X makes a move, then O makes a move" =
-  print_final_state initial_3x3 [ { row = 1; column = 1 }; { row = 0; column = 0 } ];
+let%expect_test "Game_state.make_move: PlayerOne makes two moves in a row" =
+  print_final_state initial_standard_board [ 4; 5 ];
   [%expect
     {|
-    O| |
-    -----
-     |X|
-    -----
-     | |
-    (In_progress (whose_turn X))
+      6 6 6 1 0 4
+    1             0
+      4 4 4 4 4 4
+    (Playing (whose_turn PlayerTwo))
     |}]
 ;;
 
-let%expect_test "Game_state.make_move: tictactoe X wins vertically" =
+let%expect_test "Game_state.make_move: Shortest possible game (10 moves) where PlayerOne wins" =
   print_final_state
-    initial_3x3
-    [ { row = 0; column = 2 }
-    ; { row = 1; column = 0 }
-    ; { row = 1; column = 2 }
-    ; { row = 1; column = 1 }
-    ; { row = 2; column = 2 }
-    ];
+    initial_standard_board
+    [ 4; 1; 2; 3; 6; 4; 6; 5; 6; 6];
   [%expect
     {|
-     | |X
-    -----
-    O|O|X
-    -----
-     | |X
-    (Winner X)
+       0 0 0 0 0 0
+    41             7
+       0 0 0 0 0 0
+    (Winner PlayerOne)
     |}]
 ;;
 
-let%expect_test "Game_state.make_move: tictactoe X wins horizontally" =
+let%expect_test "Game_state.make_move: A game where PlayerTwo wins" =
   print_final_state
-    initial_3x3
-    [ { row = 0; column = 0 }
-    ; { row = 1; column = 0 }
-    ; { row = 0; column = 1 }
-    ; { row = 1; column = 1 }
-    ; { row = 0; column = 2 }
-    ];
+    initial_standard_board
+    [ 1; 2; 3; 4; 5; 6; 1; 2; 3; 4; 5; 6; 1; 2; 4; 5; 6; 1; 2; 3;
+      4; 5; 6; 1; 2; 3; 4; 5; 6; 1; 3; 4; 6; 1; 4; 2; 1; 3; 3; 6;
+      4];
   [%expect
     {|
-    X|X|X
-    -----
-    O|O|
-    -----
-     | |
-    (Winner X)
+       0 0 0 0 0 0
+    21             27
+       0 0 0 0 0 0
+    (Winner PlayerTwo)
     |}]
 ;;
 
-let%expect_test "Game_state.make_move: tictactoe O wins horizontally" =
+let%expect_test "Game_state.make_move: A game that ends in a tie" =
   print_final_state
-    initial_3x3
-    [ { row = 0; column = 0 }
-    ; { row = 1; column = 0 }
-    ; { row = 0; column = 1 }
-    ; { row = 1; column = 1 }
-    ; { row = 2; column = 2 }
-    ; { row = 1; column = 2 }
-    ];
+    initial_standard_board
+    [ 2; 5; 3; 3; 1; 3; 4; 3; 6; 2; 4; 6; 5; 5; 3; 3; 2; 2; 1; 
+      6; 3; 1; 2; 3; 5; 4; 4; 1; 3; 5; 5; 6; 3; 3; 6; 6; 4];
   [%expect
     {|
-    X|X|
-    -----
-    O|O|O
-    -----
-     | |X
-    (Winner O)
+       0 0 0 0 0 0
+    24             24
+       0 0 0 0 0 0
+    Tie
     |}]
 ;;
 
-let%expect_test "Game_state.make_move: tictactoe O wins diagonally" =
+let%expect_test "Game_state.make_move: Test case for huge mancala board" =
   print_final_state
-    initial_3x3
-    [ { row = 0; column = 0 }
-    ; { row = 2; column = 0 }
-    ; { row = 0; column = 1 }
-    ; { row = 1; column = 1 }
-    ; { row = 2; column = 2 }
-    ; { row = 0; column = 2 }
-    ];
+    initial_big_board
+    [ 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
+      1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
+      1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10;
+      1; 2; 3; 4; 6; 1; 2; 5; 1; 2; 3; 4; 5; 3; 1;];
   [%expect
     {|
-    X|X|O
-    -----
-     |O|
-    -----
-    O| |X
-    (Winner O)
-    |}]
-;;
-
-let%expect_test "Game_state.make_move: tictactoe stalemate" =
-  print_final_state
-    initial_3x3
-    [ { row = 0; column = 0 }
-    ; { row = 1; column = 0 }
-    ; { row = 0; column = 1 }
-    ; { row = 1; column = 1 }
-    ; { row = 2; column = 0 }
-    ; { row = 2; column = 1 }
-    ; { row = 1; column = 2 }
-    ; { row = 0; column = 2 }
-    ; { row = 2; column = 2 }
-    ];
-  [%expect
-    {|
-    X|X|O
-    -----
-    O|O|X
-    -----
-    X|O|X
-    Stalemate
-    |}]
-;;
-
-let%expect_test "Game_state.make_move: full gomoku game until O wins" =
-  print_final_state
-    initial_gomoku
-    [ { row = 0; column = 0 }
-    ; { row = 1; column = 0 }
-    ; { row = 0; column = 1 }
-    ; { row = 2; column = 1 }
-    ; { row = 0; column = 2 }
-    ; { row = 3; column = 2 }
-    ; { row = 0; column = 3 }
-    ; { row = 4; column = 3 }
-    ; { row = 0; column = 9 }
-    ; { row = 5; column = 4 }
-    ];
-  [%expect
-    {|
-    X|X|X|X| | | | | |X| | | | |
-    -----------------------------
-    O| | | | | | | | | | | | | |
-    -----------------------------
-     |O| | | | | | | | | | | | |
-    -----------------------------
-     | |O| | | | | | | | | | | |
-    -----------------------------
-     | | |O| | | | | | | | | | |
-    -----------------------------
-     | | | |O| | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    -----------------------------
-     | | | | | | | | | | | | | |
-    (Winner O)
-    |}]
-;;
-
-let%expect_test "Game_state.get_all_moves for tictactoe" =
-  let all_moves = Game_state.get_all_moves initial_3x3 in
-  print_s [%message "All moves for 3x3 board" (all_moves : Move.t list)];
-  [%expect
-    {|
-    ("All moves for 3x3 board"
-     (all_moves
-      (((row 0) (column 0)) ((row 0) (column 1)) ((row 0) (column 2))
-       ((row 1) (column 0)) ((row 1) (column 1)) ((row 1) (column 2))
-       ((row 2) (column 0)) ((row 2) (column 1)) ((row 2) (column 2)))))
+       0 1 0 1 0 0  15 2  13 1
+    50                          63
+       2 1 0 1 5 17 4  11 2  11
+    (Playing (whose_turn PlayerOne))
     |}]
 ;;
 
@@ -391,68 +279,36 @@ let random_walk (initial_state : Game_state.t) ~random_seed =
 ;;
 
 let%expect_test "TicTacToe random walk till terminal state" =
-  random_walk initial_3x3 ~random_seed:1;
+  random_walk initial_standard_board ~random_seed:1;
   [%expect
     {|
-    O|O|X
-    -----
-     |X|
-    -----
-    X|O|X
-    (Winner X)
+       0 0 0 0 0 0
+    27             21
+       0 0 0 0 0 0
+    (Winner PlayerOne)
     |}];
-  random_walk initial_3x3 ~random_seed:3;
+  random_walk initial_standard_board ~random_seed:5;
   [%expect
     {|
-    X|X|O
-    -----
-    O|O|X
-    -----
-    X|X|O
-    Stalemate
+       0 0 0 0 0 0
+    23             25
+       0 0 0 0 0 0
+    (Winner PlayerTwo)
     |}];
-  random_walk initial_3x3 ~random_seed:1234;
+  random_walk initial_standard_board ~random_seed:1234;
   [%expect
     {|
-    X| |O
-    -----
-    X| |O
-    -----
-    X|O|X
-    (Winner X)
+       0 0 0 0 0 0
+    25             23
+       0 0 0 0 0 0
+    (Winner PlayerOne)
     |}];
-  random_walk initial_gomoku ~random_seed:1;
+  random_walk initial_big_board ~random_seed:1;
   [%expect
     {|
-     | |O| |X|X|X| | | |O| | |X|
-    -----------------------------
-    O|O| | | |O| | |X|X|X|O|X| |X
-    -----------------------------
-    X| | | |O|X| |X| | | | | | |X
-    -----------------------------
-     | | |O| |X|O| | | |X| | | |X
-    -----------------------------
-     | | |O| | | |O|O| | |O| | |X
-    -----------------------------
-    O|X|X|X|X|X| | |O| | |X| | |
-    -----------------------------
-     |O| | | | | |O| |O|O|O|O| |X
-    -----------------------------
-    X| | |O| |O|O| |X| | | | |O|O
-    -----------------------------
-     | | |O| |X|O|O| |O|X| | | |
-    -----------------------------
-    O| |X| |O|O| | | | | | | | |
-    -----------------------------
-     |X| |O| | | |X|O| |X| | |X|
-    -----------------------------
-     | | | |X|X| | |O| |X|O| |X|
-    -----------------------------
-     |O| | | | | | |O|X|X|X| | |
-    -----------------------------
-    O| |X| |X|X| | |X| | |O| | |O
-    -----------------------------
-     |O|O|X| | |X| | | | | | | |O
-    (Winner X)
+       0 0 0 0 0 0 0 0 0 0
+    89                     111
+       0 0 0 0 0 0 0 0 0 0
+    (Winner PlayerTwo)
     |}]
-;; *)
+;;

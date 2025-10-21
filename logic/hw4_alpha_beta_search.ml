@@ -53,6 +53,7 @@ function alpha_beta(node, depth, α, β, maximizing_player) is
 
 alphabeta(origin, depth, −∞, +∞, TRUE)
 *)
+
 let rec alpha_beta (node : Game_state.t) depth alpha beta =
   match node.decision with
   | In_progress { whose_turn } when depth > 0 ->

@@ -135,10 +135,10 @@ module Game_state = struct
   let do_gameover t : t =
     (* Slice the board array to get each player's side*)
     let player_one_side =
-      Array.sub t.board (get_goal_index t Players.PlayerOne + 1) t.num_squares_per_side
+      Array.sub t.board (get_goal_index t Players.PlayerTwo + 1) t.num_squares_per_side
     in
     let player_two_side =
-      Array.sub t.board (get_goal_index t Players.PlayerTwo + 1) t.num_squares_per_side
+      Array.sub t.board (get_goal_index t Players.PlayerOne + 1) t.num_squares_per_side
     in
     (* Fold each side to get the total number of beads *)
     let player_one_total = Array.fold_left (fun acc x -> acc + x) 0 player_one_side in
@@ -195,13 +195,15 @@ module Game_state = struct
 
   (* Steal all beads from current square and the one opposite it *)
   let do_steal t index current_player =
-    if on_players_side t index current_player
-    then (
+    if on_players_side t index current_player then (
       let opposite_index = Array.length t.board - index in
-      let beads_stolen = t.board.(index) + t.board.(opposite_index) in
-      t.board.(index) <- 0;
-      t.board.(opposite_index) <- 0;
-      change_score t current_player beads_stolen)
+      if t.board.(opposite_index) > 0 then (
+        let beads_stolen = t.board.(index) + t.board.(opposite_index) in
+        t.board.(index) <- 0;
+        t.board.(opposite_index) <- 0;
+        change_score t current_player beads_stolen
+      )
+    )
   ;;
 
   (* Recursively distribute the beads around the board*)
@@ -232,6 +234,11 @@ module Game_state = struct
           t.board.(next_index) <- t.board.(next_index) + 1;
           distribute_beads t next_index (beads_remaining - 1)))
     | Tie | Winner _ -> Error Move_error.Game_is_over
+  ;;
+
+  (* Get a list of all possible moves *)
+  let get_all_moves t =
+    List.init t.num_squares_per_side (fun i -> (i + 1))
   ;;
 
   (* Make a move on the board. The moves are represented as values from 1 to

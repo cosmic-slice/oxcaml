@@ -64,5 +64,6 @@ module Game_state : sig
   val on_players_side : t -> int -> Players.t -> bool
   val do_steal : t -> int -> Players.t -> unit
   val distribute_beads : t -> int -> int -> (t, Move_error.t) result
+  val get_all_moves : t -> int list
   val make_move : t -> int -> (t, Move_error.t) Result.t
 end
