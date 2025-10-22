@@ -5,9 +5,9 @@ let heuristic_value (node : Game_state.t) =
   match node.decision with
   | Tie -> 0
   | Playing _ ->
-    (* For more complex games, like Gomoku/connect6, we should have here a heuristic
-       function that scores how good this state for player X, i.e., the higher the number
-       the better it is for X. *)
+    (* At the moment, the heuristic takes into account the point differential
+       between the two players. I'm also looking into considering the bead
+       positions and how that should be weighted *)
     let p1_score = Game_state.get_score node Players.PlayerOne in
     let p2_score = Game_state.get_score node Players.PlayerTwo in
     let p1_weighted_beads =
@@ -23,13 +23,16 @@ let heuristic_value (node : Game_state.t) =
         else acc)
     in
     let extra_turn =
-      match node.decision with
-      | Playing { whose_turn = Players.PlayerOne } -> 1
+      match node.decision, node.last_move with
+      | Playing { whose_turn = Players.PlayerOne }, (Some Players.PlayerOne, _ ) -> 1
+      | Playing { whose_turn = Players.PlayerTwo }, (Some Players.PlayerTwo, _ ) -> -1 
       | _ -> 0
     in
     (* Need to think about this, using score works decently well, but trying to figure
        out a better approach *)
-    50 * (p1_score - p2_score) + 0 * (p1_weighted_beads - p2_weighted_beads) + 1 * extra_turn
+    (50 * (p1_score - p2_score))
+    + (0 * (p1_weighted_beads - p2_weighted_beads))
+    + (1 * extra_turn)
   | Winner player_kind ->
     (match player_kind with
      | PlayerOne -> Int.max_value
@@ -115,7 +118,6 @@ let alpha_beta (node : Game_state.t) ~depth =
       List.map moves_and_children ~f:(fun (move, child) ->
         move, child, alpha_beta child (depth - 1) Int.min_value Int.max_value)
     in
-    
     let best_move =
       (match whose_turn with
        | PlayerOne -> List.max_elt

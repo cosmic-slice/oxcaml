@@ -10,7 +10,7 @@ let%test "Unit test for initializing Mancala board (returns bool)" =
     { board = [| 0; 4; 4; 4; 4; 4; 4; 0; 4; 4; 4; 4; 4; 4 |]
     ; num_squares_per_side = 6
     ; decision = Playing { whose_turn = Players.PlayerOne }
-    ; last_move = (None, None) (* For animation purposes. *)
+    ; last_move = None, None (* For animation purposes. *)
     }
   in
   Game_state.equal state expected_state
@@ -123,7 +123,7 @@ let%expect_test "Game_state.make_move where PlayerOne steals a bead" =
     { board = [| 23; 0; 0; 1; 0; 0; 0; 23; 0; 0; 1; 0; 0; 0 |]
     ; num_squares_per_side = 6
     ; decision = Playing { whose_turn = Players.PlayerOne }
-    ; last_move = (Some PlayerOne, Some 6)
+    ; last_move = Some PlayerOne, Some 6
     }
   in
   make_move_and_print pre_steal_state steal_move;
