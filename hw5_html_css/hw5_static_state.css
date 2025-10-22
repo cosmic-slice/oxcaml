@@ -101,9 +101,9 @@ svg {
   margin: 25% 0 25% 0;
   padding: 10px;
   width: 100%;
-  height: 50%;
+  height: 30%;
   background-color: #cf752b;
-  border-radius: 10%;
+  border-radius: 20px;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
@@ -111,14 +111,20 @@ svg {
 
 .goal {
   background-color: #ab5130;
-  border-radius: 40%;
+  border-color: #7d3833;
+  border-style: solid none solid none;
+  border-width: 6px 0px 2px 0px;
+  border-radius: 100px;
   height: 80%;
   width: 10%;
 }
 
 .pit {
   background-color: #ab5130;
-  border-radius: 75%;
+  border-radius: 50px;
+  border-color: #7d3833;
+  border-style: solid none solid none;
+  border-width: 6px 0px 2px 0px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,13 +142,13 @@ svg {
 #top_row {
   display: flex;
   gap: 5px;
-  height: 25%;
+  height: 36%;
 }
 
 #bottom_row {
   display: flex;
   gap: 5px;
-  height: 25%;
+  height: 36%;
 }
 
 /* CSS animations to make the X/O appear slowly
