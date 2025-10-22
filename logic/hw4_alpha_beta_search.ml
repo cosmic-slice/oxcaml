@@ -24,8 +24,8 @@ let heuristic_value (node : Game_state.t) =
     in
     let extra_turn =
       match node.decision, node.last_move with
-      | Playing { whose_turn = Players.PlayerOne }, (Some Players.PlayerOne, _ ) -> 1
-      | Playing { whose_turn = Players.PlayerTwo }, (Some Players.PlayerTwo, _ ) -> -1 
+      | Playing { whose_turn = Players.PlayerOne }, (Some Players.PlayerOne, _) -> 1
+      | Playing { whose_turn = Players.PlayerTwo }, (Some Players.PlayerTwo, _) -> -1
       | _ -> 0
     in
     (* Need to think about this, using score works decently well, but trying to figure

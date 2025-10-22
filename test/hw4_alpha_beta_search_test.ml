@@ -9,7 +9,7 @@ let print_computer_move board turn max_depth =
     { board
     ; num_squares_per_side = 6
     ; decision = Playing { whose_turn = turn }
-    ; last_move = (None, None)
+    ; last_move = None, None
     }
   in
   let move = alpha_beta state ~depth:max_depth |> Option.value_exn in
@@ -48,7 +48,8 @@ let%expect_test "Simulation for 5 moves with depth 3" =
     }
   in
   print_full_game init_state 3 5;
-  [%expect {| 
+  [%expect
+    {| 
     ("Computer chooses this move" (move 4) (index 5))
 
     This transitions the game from this state:
@@ -117,7 +118,8 @@ let%expect_test "Simulation for 5 moves with depth 3" =
   |}]
 ;;
 
-let%expect_test "The first move of the game is PlayerOne moves square 4, which is optimal" =
+let%expect_test "The first move of the game is PlayerOne moves square 4, which is optimal"
+  =
   print_computer_move [| 0; 4; 4; 4; 4; 4; 4; 0; 4; 4; 4; 4; 4; 4 |] PlayerOne 1;
   [%expect
     {|
