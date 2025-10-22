@@ -10,7 +10,7 @@ let%test "Unit test for initializing Mancala board (returns bool)" =
     { board = [| 0; 4; 4; 4; 4; 4; 4; 0; 4; 4; 4; 4; 4; 4 |]
     ; num_squares_per_side = 6
     ; decision = Playing { whose_turn = Players.PlayerOne }
-    ; last_move = None (* For animation purposes. *)
+    ; last_move = (None, None) (* For animation purposes. *)
     }
   in
   Game_state.equal state expected_state
@@ -27,7 +27,7 @@ let%expect_test "Example of an expect_test (returns unit)" =
     {|
     (Ok
      ((board (0 4 4 4 4 4 4 0 4 4 4 4 4 4)) (num_squares_per_side 6)
-      (decision (Playing (whose_turn PlayerOne))) (last_move ())))
+      (decision (Playing (whose_turn PlayerOne))) (last_move (() ()))))
     |}]
 ;;
 
@@ -37,7 +37,7 @@ let%expect_test "Game_state.create fails on big (and small) sizes" =
     {|
     (Ok
      ((board (0 4 4 4 4 4 4 0 4 4 4 4 4 4)) (num_squares_per_side 6)
-      (decision (Playing (whose_turn PlayerOne))) (last_move ())))
+      (decision (Playing (whose_turn PlayerOne))) (last_move (() ()))))
     |}];
   create_and_print ~num_squares_per_side:3 ~init_beads:4;
   [%expect {| (Error (Board_too_big_or_small)) |}];
@@ -83,7 +83,7 @@ let%expect_test "Game_state.make_move from PlayerOne's cell 5 on standard board"
     {|
     (Ok
      ((board (0 4 4 4 4 4 4 0 4 0 5 5 5 5)) (num_squares_per_side 6)
-      (decision (Playing (whose_turn PlayerTwo))) (last_move (5))))
+      (decision (Playing (whose_turn PlayerTwo))) (last_move ((PlayerOne) (5)))))
     |}]
 ;;
 
@@ -95,7 +95,7 @@ let%expect_test
     {|
     (Ok
      ((board (1 4 4 4 4 4 4 0 4 4 0 5 5 5)) (num_squares_per_side 6)
-      (decision (Playing (whose_turn PlayerOne))) (last_move (4))))
+      (decision (Playing (whose_turn PlayerOne))) (last_move ((PlayerOne) (4)))))
     |}]
 ;;
 
@@ -123,7 +123,7 @@ let%expect_test "Game_state.make_move where PlayerOne steals a bead" =
     { board = [| 23; 0; 0; 1; 0; 0; 0; 23; 0; 0; 1; 0; 0; 0 |]
     ; num_squares_per_side = 6
     ; decision = Playing { whose_turn = Players.PlayerOne }
-    ; last_move = Some 6
+    ; last_move = (Some PlayerOne, Some 6)
     }
   in
   make_move_and_print pre_steal_state steal_move;
@@ -131,7 +131,7 @@ let%expect_test "Game_state.make_move where PlayerOne steals a bead" =
     {|
     (Ok
      ((board (25 0 0 0 0 0 0 23 0 0 0 0 0 0)) (num_squares_per_side 6)
-      (decision (Winner PlayerOne)) (last_move (4)))) |}]
+      (decision (Winner PlayerOne)) (last_move ((PlayerOne) (4))))) |}]
 ;;
 
 let pretty_print_board (state : Game_state.t) =

@@ -38,7 +38,7 @@ module Game_state = struct
     { board : int array
     ; num_squares_per_side : int
     ; decision : Decision.t
-    ; last_move : int option
+    ; last_move : Players.t option * int option
     }
   [@@deriving sexp, compare, equal]
 
@@ -84,7 +84,7 @@ module Game_state = struct
         { board = get_init_board num_squares_per_side init_beads
         ; num_squares_per_side
         ; decision = Playing { whose_turn = Players.PlayerOne }
-        ; last_move = None
+        ; last_move = (None, None)
         }
     | _ ->
       Error
@@ -252,7 +252,7 @@ module Game_state = struct
         | Players.PlayerOne -> Array.length t.board - move
         | Players.PlayerTwo -> move
       in
-      let t = { t with board = Array.copy t.board; last_move = Some move } in
+      let t = { t with board = Array.copy t.board; last_move = (Some whose_turn, Some move) } in
       let num_beads = t.board.(adjusted_move) in
       if is_square_empty t adjusted_move
       then Error Move_error.Square_is_empty

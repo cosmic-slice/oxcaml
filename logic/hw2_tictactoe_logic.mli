@@ -24,7 +24,7 @@ module Game_state : sig
     { board : int array
     ; num_squares_per_side : int
     ; decision : Decision.t
-    ; last_move : int option (* For animation purposes. *)
+    ; last_move : Players.t option * int option (* For animation purposes. *)
     }
   [@@deriving sexp, compare, equal]
 

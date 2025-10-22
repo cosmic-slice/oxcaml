@@ -44,11 +44,11 @@ let%expect_test "full game simulation" =
     { board = [| 0; 4; 4; 4; 4; 4; 4; 0; 4; 4; 4; 4; 4; 4 |]
     ; num_squares_per_side = 6
     ; decision = Playing { whose_turn = Players.PlayerOne }
-    ; last_move = None (* For animation purposes. *)
+    ; last_move = (None, None) (* For animation purposes. *)
     }
   in
-  print_full_game init_state 3 10;
-  [%expect{| |}];
+  print_full_game init_state 3 5;
+  [%expect {| |}]
 ;;
 
 (* let%expect_test "returns exactly one cell" =

@@ -8,12 +8,28 @@ let heuristic_value (node : Game_state.t) =
     (* For more complex games, like Gomoku/connect6, we should have here a heuristic
        function that scores how good this state for player X, i.e., the higher the number
        the better it is for X. *)
-    let has_extra_turn =
+    let p1_score = Game_state.get_score node Players.PlayerOne in
+    let p2_score = Game_state.get_score node Players.PlayerTwo in
+    let p1_weighted_beads =
+      Array.foldi node.board ~init:0 ~f:(fun i acc beads ->
+        if i > Game_state.get_goal_index node Players.PlayerTwo
+        then acc + (beads * (i - (node.num_squares_per_side + 1) - 1))
+        else acc)
+    in
+    let p2_weighted_beads =
+      Array.foldi node.board ~init:0 ~f:(fun i acc beads ->
+        if i > 0 && i < Game_state.get_goal_index node Players.PlayerTwo
+        then acc + (beads * (i - 1))
+        else acc)
+    in
+    let extra_turn =
       match node.decision with
-      | Playing { whose_turn = PlayerOne } -> 1
+      | Playing { whose_turn = Players.PlayerOne } -> 1
       | _ -> 0
     in
-    Game_state.get_score node Players.PlayerOne + has_extra_turn
+    (* Need to think about this, using score works decently well, but trying to figure
+       out a better approach *)
+    50 * (p1_score - p2_score) + 0 * (p1_weighted_beads - p2_weighted_beads) + 1 * extra_turn
   | Winner player_kind ->
     (match player_kind with
      | PlayerOne -> Int.max_value
@@ -99,6 +115,7 @@ let alpha_beta (node : Game_state.t) ~depth =
       List.map moves_and_children ~f:(fun (move, child) ->
         move, child, alpha_beta child (depth - 1) Int.min_value Int.max_value)
     in
+    
     let best_move =
       (match whose_turn with
        | PlayerOne -> List.max_elt
