@@ -4,7 +4,7 @@ open Hw2_tictactoe_logic
 open Virtual_dom
 open! Bonsai.Let_syntax
 
-let svg_ns = "http://www.w3.org/2000/svg"
+(* let svg_ns = "http://www.w3.org/2000/svg" *)
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
 let colors = [| "red"; "blue"; "green"; "yellow" |]
