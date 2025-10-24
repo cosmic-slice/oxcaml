@@ -1,107 +1,108 @@
 open! Core
+open! Stdlib
 
-type role = 
-  | Warrior
-  | Mage
-  | Cleric
-  | Archer
+let init_beads = 4
+let num_squares_per_side = 6
 
-type tile_type = 
-  | Start
-  | Combat
-  | Treasure
-  | Random
-  | Shop
+type player_kind =
+  | X
+  | O
 
-type stats = 
-  | HP
-  | Strength
-  | Defense
-  | Luck
+type cell_position =
+  { row : int
+  ; column : int
+  }
 
-type direction = 
-  | North
-  | South
-  | East
-  | West
+type decision =
+  | In_progress of { whose_turn : player_kind }
+  | Winner of player_kind
+  | Stalemate
 
-type coordinate = {
-  x: int;
-  y: int
-}
+type game_state =
+  { board : (cell_position * player_kind) list
+  ; rows : int
+  ; columns : int
+  ; winning_sequence_length : int
+  ; decision : decision
+  }
 
-type decision = 
-  | Playing
-  | Winner of { player_id : int }
-  | Game_Over
+type move = cell_position
 
-type tile = tile_type * direction
+(*=
+ | |
+-----
+ | |
+-----
+ | |
+*)
+let initial_state : game_state =
+  { board = []
+  ; rows = 3
+  ; columns = 3
+  ; winning_sequence_length = 3
+  ; decision = In_progress { whose_turn = X }
+  }
+;;
 
-type Player = {
-  id: int;
-  name: string;
-  role: role;
-  hp: int;
-  max_hp: int;
-  gold: int;
-  position: coordinate;
-  deck: Card list
-}
+let move_at_0x0 : move = { row = 0; column = 0 }
 
-type Card = {
-  name: string;
-  description: string;
-  effects: (stats * int) list
-}
+(*=
+X| |
+-----
+ | |
+-----
+ | |
+*)
+let state_after_move_at_0x0 : game_state =
+  { board = [ move_at_0x0, X ]
+  ; rows = 3
+  ; columns = 3
+  ; winning_sequence_length = 3
+  ; decision = In_progress { whose_turn = O }
+  }
+;;
 
-type Board = {
-  tile_map: tile list list;
-  width: int;
-  height: int;
-}
+(*=
+ | |X
+-----
+O|O|X
+-----
+ | |
+*)
+let before_terminal_state : game_state =
+  { board =
+      [ { row = 0; column = 2 }, X
+      ; { row = 1; column = 0 }, O
+      ; { row = 1; column = 2 }, X
+      ; { row = 1; column = 1 }, O
+      ]
+  ; rows = 3
+  ; columns = 3
+  ; winning_sequence_length = 3
+  ; decision = In_progress { whose_turn = X }
+  }
+;;
 
-type game_state = {
-  board: Board;
-  active_players: Player list;
-  decision: decision
-}
+let move_to_terminal_state : move = { row = 2; column = 2 }
 
-let initial_state : game_state = {
-  board: ;
-  active_players: [| p1_init ; p2_init |];
-  decision: Playing
-}
-
-let intermediate_state : game_state = {
-  board: ;
-  active_players: [];
-  decision: Playing
-}
-
-let final_state : game_state = {
-  board: ;
-  active_players: [];
-  decision: Winner 1
-}
-
-let p1_init = {
-  id: 1;
-  name: "Alex";
-  role: role.Warrior;
-  hp: 50;
-  max_hp: 50;
-  gold: 500;
-  position: {x: 0; y: 0};
-  deck: []
-}
-
-let p2_init = {
-  id: 2;
-  name: "John";
-  role: role.Archer;
-  hp: 50;
-  max_hp: 50;
-  gold: 500;
-  position: {x: 0; y: 0};
-  deck: []
-}
+(*=
+ | |X
+-----
+O|O|X
+-----
+ | |X
+*)
+let terminal_state : game_state =
+  { board =
+      [ { row = 0; column = 2 }, X
+      ; { row = 1; column = 0 }, O
+      ; { row = 1; column = 2 }, X
+      ; { row = 1; column = 1 }, O
+      ; { row = 2; column = 2 }, X
+      ]
+  ; rows = 3
+  ; columns = 3
+  ; winning_sequence_length = 3
+  ; decision = Winner X
+  }
+;;

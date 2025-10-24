@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+
+<head>
+    <meta charset="utf-8">
+    <title>TicTacToe</title>
+    <meta name="description" content="TicTacToe game">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="hw5_static_state.css">
+    <link rel="icon" href="data:,">
+</head>
+
+<body>
+    <div class="game">
+        <!-- First row: ['X', 'O', ''] -->
+        <div id="board">
+            <div class="goal" id="p1_goal"></div>
+            <div id="middle_rows">
+              <div id="top_row">
+                <div class="pit p1" id="p1_1">
+                <svg width="100%" height="100%">
+                  <circle cx="50%" cy="30%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="25%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="23%" r="7%" fill="white"/>
+                    <circle cx="50%" cy="80%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="73%" r="7%" fill="white"/>
+                    <circle cx="25%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="26%" cy="48%" r="7%" fill="white"/>
+                    <circle cx="75%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="76%" cy="48%" r="7%" fill="white"/>
+                </svg>
+                </div>
+                <div class="pit p1" id="p1_2">
+                <svg width="100%" height="100%">
+                  <circle cx="50%" cy="30%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="25%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="23%" r="7%" fill="white"/>
+                    <circle cx="50%" cy="80%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="73%" r="7%" fill="white"/>
+                    <circle cx="25%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="26%" cy="48%" r="7%" fill="white"/>
+                    <circle cx="75%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="76%" cy="48%" r="7%" fill="white"/>
+                  </svg>
+                </div>
+                <div class="pit p1" id="p1_3">
+                <svg width="100%" height="100%">
+                  <circle cx="50%" cy="30%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="25%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="23%" r="7%" fill="white"/>
+                    <circle cx="50%" cy="80%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="73%" r="7%" fill="white"/>
+                    <circle cx="25%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="26%" cy="48%" r="7%" fill="white"/>
+                    <circle cx="75%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="76%" cy="48%" r="7%" fill="white"/>
+                  </svg>
+                </div>
+                <div class="pit p1" id="p1_4">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="30%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="25%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="23%" r="7%" fill="white"/>
+                    <circle cx="50%" cy="80%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="73%" r="7%" fill="white"/>
+                    <circle cx="25%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="26%" cy="48%" r="7%" fill="white"/>
+                    <circle cx="75%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="76%" cy="48%" r="7%" fill="white"/>
+                  </svg>
+                </div>
+                <div class="pit p1" id="p1_5">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="30%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="25%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="23%" r="7%" fill="white"/>
+                    <circle cx="50%" cy="80%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="73%" r="7%" fill="white"/>
+                    <circle cx="25%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="26%" cy="48%" r="7%" fill="white"/>
+                    <circle cx="75%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="76%" cy="48%" r="7%" fill="white"/>
+                  </svg>
+                </div>
+                <div class="pit p1" id="p1_6">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="30%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="25%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="23%" r="7%" fill="white"/>
+                    <circle cx="50%" cy="80%" r="10%" fill="#7d3833"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="51%" cy="73%" r="7%" fill="white"/>
+                    <circle cx="25%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="26%" cy="48%" r="7%" fill="white"/>
+                    <circle cx="75%" cy="55%" r="10%" fill="#7d3833"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="#d3d3d3"/>
+                    <circle cx="76%" cy="48%" r="7%" fill="white"/>
+                  </svg>
+                </div>
+              </div>
+              <div id="bottom_row">
+                <div class="pit p2" id="p1_2">
+                <svg width="100%" height="100%">
+                  <circle cx="50%" cy="25%" r="10%" fill="green"/>
+                  <circle cx="50%" cy="75%" r="10%" fill="red"/>
+                  <circle cx="25%" cy="50%" r="10%" fill="blue"/>
+                  <circle cx="75%" cy="50%" r="10%" fill="yellow"/>
+                </svg>
+                </div>
+                <div class="pit p2" id="p2_2">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="25%" r="10%" fill="green"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="red"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="blue"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="yellow"/>
+                  </svg>
+                </div>
+                <div class="pit p2" id="p2_3">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="25%" r="10%" fill="green"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="red"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="blue"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="yellow"/>
+                  </svg>
+                </div>
+                <div class="pit p2" id="p2_4">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="25%" r="10%" fill="green"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="red"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="blue"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="yellow"/>
+                  </svg>
+                </div>
+                <div class="pit p2" id="p2_5">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="25%" r="10%" fill="green"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="red"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="blue"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="yellow"/>
+                  </svg>
+                </div>
+                <div class="pit p2" id="p2_6">
+                  <svg width="100%" height="100%">
+                    <circle cx="50%" cy="25%" r="10%" fill="green"/>
+                    <circle cx="50%" cy="75%" r="10%" fill="red"/>
+                    <circle cx="25%" cy="50%" r="10%" fill="blue"/>
+                    <circle cx="75%" cy="50%" r="10%" fill="yellow"/>
+                  </svg>
+                </div>
+              </div>
+              </div>
+            <div class="goal" id="p2_goal"></div>
+        </div>
+        <script>
+          let board = [0, 4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4];
+          let ids = ["p1_goal", "p2_1", "p2_2", "p2_3", "p2_4", "p2_5", "p2_6", "p2_goal", "p1_6", "p1_5", "p1_4", "p1_3", "p1_2", "p1_1"];
+          let beadRadius = "10%";
+          let distributionRadius = 25;
+
+          for (let i = 0; i < ids.length; i++) {
+            let pit = document.getElementById(ids[i]);
+            let numBeads = board[i];
+            let cx = 50;
+            let cy = 50;
+
+            let beads = document.createElement("svg");
+            beads.width = "100%";
+            beads.height = "100%";
+
+            for (let j = 0; j < numBeads; j++) {
+              let bead = document.createElement("circle");
+              let angle = j * (2 * Math.PI / numBeads);
+              let dx = distributionRadius * Math.cos(angle);
+              let dy = distributionRadius * Math.cos(angle);
+              let x = `${cx + dx}%`;
+              let y = `${cy + dy}%`;
+
+              bead.cx = x;
+              bead.cy = y;
+              bead.r = radius;
+              bead.fill = "white";
+
+              beads.appendChild(bead);
+            }
+
+            pit.appendChild(beads);
+          }
+        </script>
+    </div>
+</body>
+
+</html>

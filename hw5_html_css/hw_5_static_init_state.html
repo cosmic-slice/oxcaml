@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+
+<head>
+    <meta charset="utf-8">
+    <title>Mancala</title>
+    <meta name="description" content="Mancala game">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="hw5_static_state.css">
+    <link rel="icon" href="data:,">
+</head>
+
+<body>
+    <div class="game">
+        <!-- First row: ['X', 'O', ''] -->
+        <div id="board">
+            <div class="goal" id="p1_goal"></div>
+            <div id="middle_rows">
+              <div id="top_row">
+                <div class="pit p1" id="p1_1"></div>
+                <div class="pit p1" id="p1_2"></div>
+                <div class="pit p1" id="p1_3"></div>
+                <div class="pit p1" id="p1_4"></div>
+                <div class="pit p1" id="p1_5"></div>
+                <div class="pit p1" id="p1_6"></div>
+              </div>
+              <div id="bottom_row">
+                <div class="pit p2" id="p2_1"></div>
+                <div class="pit p2" id="p2_2"></div>
+                <div class="pit p2" id="p2_3"></div>
+                <div class="pit p2" id="p2_4"></div>
+                <div class="pit p2" id="p2_5"></div>
+                <div class="pit p2" id="p2_6"></div>
+              </div>
+              </div>
+            <div class="goal" id="p2_goal"></div>
+        </div>
+        <script>
+          const svgNS = "http://www.w3.org/2000/svg";
+          let board = [0, 4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4];
+          let ids = ["p1_goal", "p2_1", "p2_2", "p2_3", "p2_4", "p2_5", "p2_6", "p2_goal", "p1_6", "p1_5", "p1_4", "p1_3", "p1_2", "p1_1"];
+          let colors = ["red", "blue", "green", "yellow"];
+          let beadRadius = "10%";
+          let ringMultiplier = 6;
+          console.log("Hi");
+        
+          function createBeadAt (x, y, color) {
+            let bead = document.createElementNS(svgNS,"circle");
+            bead.setAttribute("cx", x);
+            bead.setAttribute("cy", y);
+            bead.setAttribute("r", beadRadius);
+            bead.setAttribute("fill", color);
+            return bead;
+          }
+
+          // Iterate through board and create beads
+          for (let i = 0; i < ids.length; i++) {
+            let pit = document.getElementById(ids[i]);
+            let numBeads = board[i];
+            let cx = 50;
+            let cy = 50;
+            let distributionRadius = 0;
+            let numInRing = 0;
+            let ring = 0;
+            let indexInRing = 0;
+
+            // Create SVG container for beads
+            let beads = document.createElementNS(svgNS, "svg");
+            beads.setAttribute("width", "100%");
+            beads.setAttribute("height", "100%");
+
+            // Distribute beads in a circular pattern inside the pit
+            for (let j = 0; j < numBeads; j++) {
+              let dx;
+              let dy;
+              
+              if (j === 0) {
+                dx = 0;
+                dy = 0;
+              } else {
+                let numBeadsInRing = Math.min(ringMultiplier ** ring - 1, numBeads - ringMultiplier ** (ring - 1));
+                let angle = (indexInRing - 1) * (2 * Math.PI / numBeadsInRing);
+                
+                dx = distributionRadius * Math.cos(angle);
+                dy = distributionRadius * Math.sin(angle);
+              }
+
+              let x = `${cx + dx}%`;
+              let y = `${cy + dy}%`;
+              let color = colors[(i + j) % 4];
+              let bead = createBeadAt(x, y, color);
+              if (ids[i].includes("goal")) {
+                bead.setAttribute("r", "5%");
+              }
+
+              beads.appendChild(bead);
+              
+              numInRing++;
+              indexInRing++;
+              if (numInRing === (ringMultiplier ** ring)) {
+                if (ids[i].includes("goal")) {
+                  distributionRadius += 15;
+                } else {
+                  distributionRadius += 20;
+                }
+                
+                indexInRing = 0;
+                ring++;
+              }
+            }
+
+            pit.appendChild(beads);
+          }
+          
+        </script>
+    </div>
+</body>
+
+</html>
