@@ -23,13 +23,12 @@ let ids =
 (* --- SVG Rendering Functions --- *)
 
 let create_bead ~cx ~cy ~radius ~color =
-  let radius_str = sprintf "%.1f%%" radius in (* Use "10%" and "5%" as in JS *)
   Vdom.Node.create_svg
     "circle"
     ~attrs:
       [ Vdom.Attr.create "cx" (sprintf "%.1f%%" cx) (* Append % for placement relative to pit *)
       ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy) (* Append % for placement relative to pit *)
-      ; Vdom.Attr.create "r" radius_str
+      ; Vdom.Attr.create "r" radius
       ; Vdom.Attr.create "fill" color
       ]
     []
