@@ -47,7 +47,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
 
       (* Archimedean spiral formula: r = a * theta *)
       let angle = if num_beads = 0 then 0.0 else j_float *. (2.0 *. Float.pi) /. float_of_int num_beads in (* Convert degrees to radians *)
-      let r = 20.0 in
+      let r = 80.0 in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
       let dx = r *. Float.cos angle in
