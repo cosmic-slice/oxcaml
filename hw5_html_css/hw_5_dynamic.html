@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+
+<head>
+    <meta charset="utf-8">
+    <title>TicTacToe</title>
+    <meta name="description" content="TicTacToe game">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="hw5_static_state.css">
+    <link rel="icon" href="data:,">
+</head>
+
+<body>
+    <div class="game">
+        <!-- First row: ['X', 'O', ''] -->
+        <div id="board">
+            <div class="goal" id="p1_goal"></div>
+            <div id="middle_rows">
+              <div id="top_row">
+                <div class="pit p1" id="p1_1"></div>
+                <div class="pit p1" id="p1_2"></div>
+                <div class="pit p1" id="p1_3"></div>
+                <div class="pit p1" id="p1_4"></div>
+                <div class="pit p1" id="p1_5"></div>
+                <div class="pit p1" id="p1_6"></div>
+              </div>
+              <div id="bottom_row">
+                <div class="pit p2" id="p2_1"></div>
+                <div class="pit p2" id="p2_2"></div>
+                <div class="pit p2" id="p2_3"></div>
+                <div class="pit p2" id="p2_4"></div>
+                <div class="pit p2" id="p2_5"></div>
+                <div class="pit p2" id="p2_6"></div>
+              </div>
+              </div>
+            <div class="goal" id="p2_goal"></div>
+        </div>
+        <script>
+          const svgNS = "http://www.w3.org/2000/svg";
+          let board = [0, 4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4];
+          let ids = ["p1_goal", "p2_1", "p2_2", "p2_3", "p2_4", "p2_5", "p2_6", "p2_goal", "p1_6", "p1_5", "p1_4", "p1_3", "p1_2", "p1_1"];
+          let colors = ["red", "blue", "green", "yellow"];
+          let beadRadius = "10%";
+          let distributionRadius = 30
+        
+          function createBeadAt (x, y) {
+            
+          }
+          for (let i = 0; i < ids.length; i++) {
+            let pit = document.getElementById(ids[i]);
+            let numBeads = board[i];
+            let cx = 50;
+            let cy = 50;
+
+            let beads = document.createElementNS(svgNS, "svg");
+            beads.setAttribute("width", "100%");
+            beads.setAttribute("height", "100%");
+
+            for (let j = 0; j < numBeads; j++) {
+              console.log(numBeads);
+              let bead = document.createElementNS(svgNS,"circle");
+              let dx;
+              let dy;
+              
+              if (j === 0) {
+                dx = 0;
+                dy = 0;
+              } else {
+                let angle = (j - 1) * (2 * Math.PI / (numBeads - 1));
+                dx = distributionRadius * Math.cos(angle) + 2 * (Math.random() - 0.5) * 10;
+                dy = distributionRadius * Math.sin(angle) + 2 * (Math.random() - 0.5) * 10;
+              }
+
+              let x = `${cx + dx}%`;
+              let y = `${cy + dy}%`;
+
+              bead.setAttribute("cx", x);
+              bead.setAttribute("cy", y);
+              if (ids[i].includes("goal")) {
+                bead.setAttribute("r", "5%");
+              } else {
+                bead.setAttribute("r", beadRadius);
+              }
+            
+              bead.setAttribute("fill", colors[j % 4]);
+
+              beads.appendChild(bead);
+            }
+
+            pit.appendChild(beads);
+          }
+          
+        </script>
+    </div>
+</body>
+
+</html>

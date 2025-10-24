@@ -167,6 +167,41 @@
               </div>
             <div class="goal" id="p2_goal"></div>
         </div>
+        <script>
+          let board = [0, 4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4];
+          let ids = ["p1_goal", "p2_1", "p2_2", "p2_3", "p2_4", "p2_5", "p2_6", "p2_goal", "p1_6", "p1_5", "p1_4", "p1_3", "p1_2", "p1_1"];
+          let beadRadius = "10%";
+          let distributionRadius = 25;
+
+          for (let i = 0; i < ids.length; i++) {
+            let pit = document.getElementById(ids[i]);
+            let numBeads = board[i];
+            let cx = 50;
+            let cy = 50;
+
+            let beads = document.createElement("svg");
+            beads.width = "100%";
+            beads.height = "100%";
+
+            for (let j = 0; j < numBeads; j++) {
+              let bead = document.createElement("circle");
+              let angle = j * (2 * Math.PI / numBeads);
+              let dx = distributionRadius * Math.cos(angle);
+              let dy = distributionRadius * Math.cos(angle);
+              let x = `${cx + dx}%`;
+              let y = `${cy + dy}%`;
+
+              bead.cx = x;
+              bead.cy = y;
+              bead.r = radius;
+              bead.fill = "white";
+
+              beads.appendChild(bead);
+            }
+
+            pit.appendChild(beads);
+          }
+        </script>
     </div>
 </body>
 
