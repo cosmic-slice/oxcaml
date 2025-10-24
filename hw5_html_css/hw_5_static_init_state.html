@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="utf-8">
-    <title>TicTacToe</title>
-    <meta name="description" content="TicTacToe game">
+    <title>Mancala</title>
+    <meta name="description" content="Mancala game">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" type="text/css" href="hw5_static_state.css">
     <link rel="icon" href="data:,">
@@ -41,24 +41,35 @@
           let ids = ["p1_goal", "p2_1", "p2_2", "p2_3", "p2_4", "p2_5", "p2_6", "p2_goal", "p1_6", "p1_5", "p1_4", "p1_3", "p1_2", "p1_1"];
           let colors = ["red", "blue", "green", "yellow"];
           let beadRadius = "10%";
-          let distributionRadius = 30
+          let ringMultiplier = 6;
         
           function createBeadAt (x, y) {
-            
+            let bead = document.createElementNS(svgNS,"circle");
+            bead.setAttribute("cx", x);
+            bead.setAttribute("cy", y);
+            bead.setAttribute("r", beadRadius);
+            bead.setAttribute("fill", "white");
+            return bead;
           }
+
+          // Iterate through board and create beads
           for (let i = 0; i < ids.length; i++) {
             let pit = document.getElementById(ids[i]);
             let numBeads = board[i];
             let cx = 50;
             let cy = 50;
+            let distributionRadius = 0;
+            let numInRing = 0;
+            let ring = 0;
+            let indexInRing = 0;
 
+            // Create SVG container for beads
             let beads = document.createElementNS(svgNS, "svg");
             beads.setAttribute("width", "100%");
             beads.setAttribute("height", "100%");
 
+            // Distribute beads in a circular pattern inside the pit
             for (let j = 0; j < numBeads; j++) {
-              console.log(numBeads);
-              let bead = document.createElementNS(svgNS,"circle");
               let dx;
               let dy;
               
@@ -66,25 +77,34 @@
                 dx = 0;
                 dy = 0;
               } else {
-                let angle = (j - 1) * (2 * Math.PI / (numBeads - 1));
-                dx = distributionRadius * Math.cos(angle) + 2 * (Math.random() - 0.5) * 10;
-                dy = distributionRadius * Math.sin(angle) + 2 * (Math.random() - 0.5) * 10;
+                let numBeadsInRing = Math.min(ringMultiplier ** ring - 1, numBeads - ringMultiplier ** (ring - 1));
+                let angle = (indexInRing - 1) * (2 * Math.PI / numBeadsInRing);
+                
+                dx = distributionRadius * Math.cos(angle);
+                dy = distributionRadius * Math.sin(angle);
               }
 
               let x = `${cx + dx}%`;
               let y = `${cy + dy}%`;
-
-              bead.setAttribute("cx", x);
-              bead.setAttribute("cy", y);
+              let bead = createBeadAt(x, y);
               if (ids[i].includes("goal")) {
                 bead.setAttribute("r", "5%");
-              } else {
-                bead.setAttribute("r", beadRadius);
               }
-            
-              bead.setAttribute("fill", colors[j % 4]);
 
               beads.appendChild(bead);
+              
+              numInRing++;
+              indexInRing++;
+              if (numInRing === (ringMultiplier ** ring)) {
+                if (ids[i].includes("goal")) {
+                  distributionRadius += 15;
+                } else {
+                  distributionRadius += 20;
+                }
+                
+                indexInRing = 0;
+                ring++;
+              }
             }
 
             pit.appendChild(beads);
