@@ -4,62 +4,84 @@ open Hw2_tictactoe_logic
 open Virtual_dom
 open! Bonsai.Let_syntax
 
-(* let svg_ns = "http://www.w3.org/2000/svg" *)
+(* --- Constants --- *)
+
+(* For the beads, we use the user coordinate system (0-100) inside the SVG viewbox.
+   We need to append "%" to the attributes to place them relative to the pit's SVG area. *)
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
 let colors = [| "red"; "blue"; "green"; "yellow" |]
-let bead_radius = "10%"
-let goal_bead_radius = "5%"
+let bead_radius = 10.0 (* Use float for radius calculation *)
+let goal_bead_radius = 5.0
 let ring_multiplier = 6
 
-(* IDs map to board positions in circular order *)
+(* IDs map to board positions in circular order, same as your JS/HTML *)
 let ids = 
   [| "p1_goal"; "p2_1"; "p2_2"; "p2_3"; "p2_4"; "p2_5"; "p2_6"; 
      "p2_goal"; "p1_6"; "p1_5"; "p1_4"; "p1_3"; "p1_2"; "p1_1" |]
 
+(* --- SVG Rendering Functions --- *)
+
 let create_bead ~cx ~cy ~radius ~color =
-  Vdom.Node.inner_html_svg
-    ~tag: "svg"
-    ~attrs: [ viewbox ]
-    ~this_html_is_sanitized_and_is_totally_safe_trust_me:
-      (sprintf "<circle cx=%s cy=%s r=%s fill=%s />" cx cy radius color)
-    ()
+  let radius_str = sprintf "%.1f%%" radius in (* Use "10%" and "5%" as in JS *)
+  Vdom.Node.create_svg
+    "circle"
+    ~attrs:
+      [ Vdom.Attr.create "cx" (sprintf "%.1f%%" cx) (* Append % for placement relative to pit *)
+      ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy) (* Append % for placement relative to pit *)
+      ; Vdom.Attr.create "r" radius_str
+      ; Vdom.Attr.create "fill" color
+      ]
+    []
 ;;
 
 let render_beads ~num_beads ~is_goal ~pit_index =
-  let cx = 50.0 in
-  let cy = 50.0 in
+  let cx = 50.0 in (* Center X *)
+  let cy = 50.0 in (* Center Y *)
   let radius = if is_goal then goal_bead_radius else bead_radius in
   
+  (* Recursive function to distribute beads *)
   let rec distribute_beads j ring index_in_ring distribution_radius acc =
     if j >= num_beads then List.rev acc
     else
-      let dx, dy =
-        if j = 0 then 0.0, 0.0
+      let dx, dy, next_dist, next_ring, next_index =
+        if j = 0 then (* First bead is at the center *)
+          0.0, 0.0, 0.0, 1, 0
         else
+          let ring_dist = if is_goal then 15.0 else 20.0 in
+          let prev_ring_count = Int.pow ring_multiplier (ring - 1) in
+          let current_ring_count = Int.pow ring_multiplier ring in
+
+          (* Beads in the current ring, or remaining beads if fewer than a full ring *)
           let num_beads_in_ring = 
-            Int.min 
-              (Int.pow ring_multiplier ring - 1) 
-              (num_beads - Int.pow ring_multiplier (ring - 1))
+            if j < current_ring_count then 
+              j - prev_ring_count + 1 
+            else 
+              current_ring_count - prev_ring_count
           in
+          
           let angle = 
-            Float.of_int (index_in_ring - 1) *. (2.0 *. Float.pi /. Float.of_int num_beads_in_ring)
+            Float.of_int (index_in_ring) *. 
+            (2.0 *. Float.pi /. Float.of_int num_beads_in_ring)
           in
-          distribution_radius *. Float.cos angle, distribution_radius *. Float.sin angle
+          
+          let dx = distribution_radius *. Float.cos angle in
+          let dy = distribution_radius *. Float.sin angle in
+          
+          let next_index = index_in_ring + 1 in
+          if next_index >= num_beads_in_ring then
+            (dx, dy, distribution_radius +. ring_dist, ring + 1, 0)
+          else
+            (dx, dy, distribution_radius, ring, next_index)
       in
       
       let color = colors.((pit_index + j) % 4) in
-      let bead = create_bead ~cx:(string_of_float (cx +. dx) ^ "%") ~cy:(string_of_float (cy +. dy) ^ "%") ~radius ~color in
+      let bead = create_bead ~cx:(cx +. dx) ~cy:(cy +. dy) ~radius ~color in
       
-      let new_index = index_in_ring + 1 in
-      if new_index = Int.pow ring_multiplier ring then
-        let new_dist = distribution_radius +. (if is_goal then 15.0 else 20.0) in
-        distribute_beads (j + 1) (ring + 1) 0 new_dist (bead :: acc)
-      else
-        distribute_beads (j + 1) ring new_index distribution_radius (bead :: acc)
+      distribute_beads (j + 1) next_ring next_index next_dist (bead :: acc)
   in
   
-  let beads = distribute_beads 0 0 0 0.0 [] in
+  let beads = distribute_beads 0 1 0 20.0 [] in (* Initial ring is 1, radius 20 *)
   
   Vdom.Node.create_svg
     "svg"
@@ -70,6 +92,8 @@ let render_beads ~num_beads ~is_goal ~pit_index =
       ]
     beads
 ;;
+
+(* --- Mancala Board Component --- *)
 
 let mancala_board ~(game_state : Game_state.t) ~set_game_state =
   let is_game_over = Game_state.is_game_over game_state in
@@ -86,7 +110,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
         let move = Option.value_exn move_number in
         Vdom.Attr.on_click (fun _ ->
           match Game_state.make_move game_state move with
-          | Error _ -> raise_s [%message "Invalid move" (board_index : int) (player_class : string)]
+          | Error _ -> raise_s [%message "Invalid move" (move : int)]
           | Ok new_game_state -> set_game_state new_game_state)
     in
     
@@ -104,7 +128,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
       [ beads_svg ]
   in
   
-  (* Top row: PlayerOne's side (right to left: indices 13,12,11,10,9,8 -> moves 1,2,3,4,5,6) *)
+  (* Top row: Player One's side (right to left: indices 13..8 -> moves 1..6) *)
   let top_row =
     Vdom.Node.div
       ~attrs:[ Vdom.Attr.id "top_row" ]
@@ -114,7 +138,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
         render_pit ~board_index ~is_goal:false ~player_class:"p1" ~move_number:(Some move)))
   in
   
-  (* Bottom row: PlayerTwo's side (left to right: indices 1,2,3,4,5,6 -> moves 1,2,3,4,5,6) *)
+  (* Bottom row: Player Two's side (left to right: indices 1..6 -> moves 1..6) *)
   let bottom_row =
     Vdom.Node.div
       ~attrs:[ Vdom.Attr.id "bottom_row" ]
