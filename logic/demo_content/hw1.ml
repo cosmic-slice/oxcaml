@@ -1,8 +1,4 @@
 open! Core
-open! Stdlib
-
-let init_beads = 4
-let num_squares_per_side = 6
 
 type player_kind =
   | X
