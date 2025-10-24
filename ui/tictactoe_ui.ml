@@ -100,7 +100,6 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
         [ Vdom.Attr.id id_class
         ; Vdom.Attr.classes class_list
         ; maybe_clickable_attr
-        ; viewbox
         ]
       [ beads_svg ]
   in
