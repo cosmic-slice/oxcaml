@@ -49,7 +49,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
       let j_float = Float.of_int j in
 
       (* Archimedean spiral formula: r = a * theta *)
-      let angle = j_float *. b /. 180.0 *. Float.pi in (* Convert degrees to radians *)
+      let angle = j_float *. (2.0 *. Float.pi) /. float_of_int num_beads in (* Convert degrees to radians *)
       let r = j_float *. a in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
