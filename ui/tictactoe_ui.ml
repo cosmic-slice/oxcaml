@@ -25,6 +25,7 @@ let create_bead ~cx ~cy ~radius ~color =
       ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy)
       ; Vdom.Attr.create "r" (sprintf "%.1f%%" radius)
       ; Vdom.Attr.create "fill" color
+      ; viewbox
       ]
     []
 ;;
@@ -69,6 +70,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
     ~attrs:
       [ Vdom.Attr.create "width" "100%"
       ; Vdom.Attr.create "height" "100%"
+      ; viewbox
       ]
     beads
 ;;
@@ -102,6 +104,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
         [ Vdom.Attr.id id_class
         ; Vdom.Attr.classes class_list
         ; maybe_clickable_attr
+        ; viewbox
         ]
       [ beads_svg ]
   in
