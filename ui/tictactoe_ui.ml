@@ -60,7 +60,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
               current_ring_count - prev_ring_count
           in
           
-          let angle = 
+          let angle = if num_beads_in_ring = 0 then 0.0 else
             Float.of_int (index_in_ring) *. 
             (2.0 *. Float.pi /. Float.of_int num_beads_in_ring)
           in
