@@ -12,7 +12,7 @@ let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
 let colors = [| "red"; "blue"; "green"; "yellow" |]
 let bead_radius = "10%" (* Use float for radius calculation *)
-let goal_bead_radius = "5%"
+let goal_bead_radius = "10%"
 let ring_multiplier = 6
 
 (* IDs map to board positions in circular order, same as your JS/HTML *)
@@ -38,50 +38,33 @@ let render_beads ~num_beads ~is_goal ~pit_index =
   let cx = 50.0 in (* Center X *)
   let cy = 50.0 in (* Center Y *)
   let radius = if is_goal then goal_bead_radius else bead_radius in
-  
-  (* Recursive function to distribute beads *)
-  let rec distribute_beads j ring index_in_ring distribution_radius acc =
+
+  (* Constants for the spiral path *)
+  let a = if is_goal then 0.7 else 1.5 in (* Controls how tightly the spiral is wound (distance from center per turn) *)
+  let b = 15.0 in (* Controls the angular spacing (how fast it spins) *)
+
+  (* Function to calculate the position for the j-th bead in a spiral *)
+  let rec create_spiral_beads j acc =
     if j >= num_beads then List.rev acc
     else
-      let dx, dy, next_dist, next_ring, next_index =
-        if j = 0 then (* First bead is at the center *)
-          0.0, 0.0, 0.0, 1, 0
-        else
-          let ring_dist = if is_goal then 15.0 else 20.0 in
-          let prev_ring_count = Int.pow ring_multiplier (ring - 1) in
-          let current_ring_count = Int.pow ring_multiplier ring in
+      let j_float = Float.of_int j in
 
-          (* Beads in the current ring, or remaining beads if fewer than a full ring *)
-          let num_beads_in_ring = 
-            if j < current_ring_count then 
-              j - prev_ring_count + 1 
-            else 
-              current_ring_count - prev_ring_count
-          in
-          
-          let angle = if num_beads_in_ring = 0 then 0.0 else
-            Float.of_int (index_in_ring) *. 
-            (2.0 *. Float.pi /. Float.of_int num_beads_in_ring)
-          in
-          
-          let dx = distribution_radius *. Float.cos angle in
-          let dy = distribution_radius *. Float.sin angle in
-          
-          let next_index = index_in_ring + 1 in
-          if next_index >= num_beads_in_ring then
-            (dx, dy, distribution_radius +. ring_dist, ring + 1, 0)
-          else
-            (dx, dy, distribution_radius, ring, next_index)
-      in
-      
+      (* Archimedean spiral formula: r = a * theta *)
+      let angle = j_float *. b /. 180.0 *. Float.pi in (* Convert degrees to radians *)
+      let r = j_float *. a in
+
+      (* Convert polar (r, angle) to Cartesian (dx, dy) *)
+      let dx = r *. Float.cos angle in
+      let dy = r *. Float.sin angle in
+
       let color = colors.((pit_index + j) % 4) in
       let bead = create_bead ~cx:(cx +. dx) ~cy:(cy +. dy) ~radius ~color in
-      
-      distribute_beads (j + 1) next_ring next_index next_dist (bead :: acc)
+
+      create_spiral_beads (j + 1) (bead :: acc)
   in
-  
-  let beads = distribute_beads 0 1 0 20.0 [] in (* Initial ring is 1, radius 20 *)
-  
+
+  let beads = create_spiral_beads 0 [] in
+
   Vdom.Node.create_svg
     "svg"
     ~attrs:
