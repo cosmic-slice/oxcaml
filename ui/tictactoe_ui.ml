@@ -11,8 +11,8 @@ open! Bonsai.Let_syntax
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
 let colors = [| "red"; "blue"; "green"; "yellow" |]
-let bead_radius = 10.0 (* Use float for radius calculation *)
-let goal_bead_radius = 5.0
+let bead_radius = "10%" (* Use float for radius calculation *)
+let goal_bead_radius = "5%"
 let ring_multiplier = 6
 
 (* IDs map to board positions in circular order, same as your JS/HTML *)
