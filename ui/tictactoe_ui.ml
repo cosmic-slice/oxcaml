@@ -39,9 +39,6 @@ let render_beads ~num_beads ~is_goal ~pit_index =
   let radius = if is_goal then goal_bead_radius else bead_radius in
 
   (* Constants for the spiral path *)
-  let a = if is_goal then 0.7 else 1.5 in (* Controls how tightly the spiral is wound (distance from center per turn) *)
-  let b = 15.0 in (* Controls the angular spacing (how fast it spins) *)
-
   (* Function to calculate the position for the j-th bead in a spiral *)
   let rec create_spiral_beads j acc =
     if j >= num_beads then List.rev acc
@@ -50,7 +47,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
 
       (* Archimedean spiral formula: r = a * theta *)
       let angle = j_float *. (2.0 *. Float.pi) /. float_of_int num_beads in (* Convert degrees to radians *)
-      let r = j_float *. a in
+      let r = 20.0 in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
       let dx = r *. Float.cos angle in
