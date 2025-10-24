@@ -77,7 +77,11 @@ let render_beads ~num_beads ~is_goal ~pit_index =
   let beads = distribute_beads 0 0 0 0.0 [] in
   Vdom.Node.create_svg
     "svg"
-    ~attrs:[ Vdom.Attr.create "width" "100%"; Vdom.Attr.create "height" "100%" ]
+    ~attrs:
+      [ Vdom.Attr.create "width" "100%"
+      ; Vdom.Attr.create "height" "100%"
+      ; viewbox
+      ]
     beads
 ;;
 
