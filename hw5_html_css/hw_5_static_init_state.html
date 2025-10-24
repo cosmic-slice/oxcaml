@@ -43,12 +43,12 @@
           let beadRadius = "10%";
           let ringMultiplier = 6;
         
-          function createBeadAt (x, y) {
+          function createBeadAt (x, y, color) {
             let bead = document.createElementNS(svgNS,"circle");
             bead.setAttribute("cx", x);
             bead.setAttribute("cy", y);
             bead.setAttribute("r", beadRadius);
-            bead.setAttribute("fill", "white");
+            bead.setAttribute("fill", color);
             return bead;
           }
 
@@ -86,7 +86,8 @@
 
               let x = `${cx + dx}%`;
               let y = `${cy + dy}%`;
-              let bead = createBeadAt(x, y);
+              let color = colors[(i + j) % 4];
+              let bead = createBeadAt(x, y, color);
               if (ids[i].includes("goal")) {
                 bead.setAttribute("r", "5%");
               }
