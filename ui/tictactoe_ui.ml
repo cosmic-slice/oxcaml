@@ -8,8 +8,8 @@ open! Bonsai.Let_syntax
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
 let colors = [| "red"; "blue"; "green"; "yellow" |]
-let bead_radius = 10.0
-let goal_bead_radius = 5.0
+let bead_radius = "10%"
+let goal_bead_radius = "5%"
 let ring_multiplier = 6
 
 (* IDs map to board positions in circular order *)
@@ -18,16 +18,12 @@ let ids =
      "p2_goal"; "p1_6"; "p1_5"; "p1_4"; "p1_3"; "p1_2"; "p1_1" |]
 
 let create_bead ~cx ~cy ~radius ~color =
-  Vdom.Node.create_svg
-    "circle"
-    ~attrs:
-      [ Vdom.Attr.create "cx" (sprintf "%.1f%%" cx)
-      ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy)
-      ; Vdom.Attr.create "r" (sprintf "%.1f%%" radius)
-      ; Vdom.Attr.create "fill" color
-      ; viewbox
-      ]
-    []
+  Vdom.Node.inner_html_svg
+    ~tag: "svg"
+    ~attrs: [ viewbox ]
+    ~this_html_is_sanitized_and_is_totally_safe_trust_me:
+      (sprintf "<circle cx=%s cy=%s r=%s fill=%s />" cx cy radius color)
+    ()
 ;;
 
 let render_beads ~num_beads ~is_goal ~pit_index =
@@ -53,7 +49,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
       in
       
       let color = colors.((pit_index + j) % 4) in
-      let bead = create_bead ~cx:(cx +. dx) ~cy:(cy +. dy) ~radius ~color in
+      let bead = create_bead ~cx:(string_of_float (cx +. dx) ^ "%") ~cy:(string_of_float (cy +. dy) ^ "%") ~radius ~color in
       
       let new_index = index_in_ring + 1 in
       if new_index = Int.pow ring_multiplier ring then
