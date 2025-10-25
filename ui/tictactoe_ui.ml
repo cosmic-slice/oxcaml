@@ -22,6 +22,18 @@ let ids =
 (* --- SVG Rendering Functions --- *)
 
 let create_bead ~cx ~cy ~radius ~color =
+  let shadow = 
+    Vdom.Node.create_svg
+      "circle"
+      ~attrs:
+        [ Vdom.Attr.create "cx" (sprintf "%.1f%%" (cx)) (* Slight offset for shadow *)
+        ; Vdom.Attr.create "cy" (sprintf "%.1f%%" (cy +. 2.0)) (* Slight offset for shadow *)
+        ; Vdom.Attr.create "r" (sprintf "%.1f%%" radius)
+        ; Vdom.Attr.create "fill" "black"
+        ; Vdom.Attr.create "opacity" "0.3"
+        ]
+      []
+  in
   let base = 
     Vdom.Node.create_svg
       "circle"
@@ -37,15 +49,15 @@ let create_bead ~cx ~cy ~radius ~color =
     Vdom.Node.create_svg
       "circle"
       ~attrs:
-        [ Vdom.Attr.create "cx" (sprintf "%.1f%%" (cx +. 2.0)) (* Slight offset for highlight *)
-        ; Vdom.Attr.create "cy" (sprintf "%.1f%%" (cy +. 2.0)) (* Slight offset for highlight *)
-        ; Vdom.Attr.create "r" (sprintf "%.1f%%" (radius *. 0.4)) (* Smaller radius for highlight *)
+        [ Vdom.Attr.create "cx" (sprintf "%.1f%%" (cx +. 4.0)) (* Slight offset for highlight *)
+        ; Vdom.Attr.create "cy" (sprintf "%.1f%%" (cy -. 4.0)) (* Slight offset for highlight *)
+        ; Vdom.Attr.create "r" (sprintf "%.1f%%" (radius *. 0.3)) (* Smaller radius for highlight *)
         ; Vdom.Attr.create "fill" "white"
         ; Vdom.Attr.create "opacity" "0.6"
         ]
       []
   in
-  [ base; highlight ]
+  [ shadow; base; highlight ]
 ;;
 
 let render_beads ~num_beads ~is_goal ~pit_index =
