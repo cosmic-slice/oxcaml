@@ -64,29 +64,32 @@ let render_beads ~num_beads ~is_goal ~pit_index =
   let cx = 50.0 in (* Center X *)
   let cy = 50.0 in (* Center Y *)
   let radius = if is_goal then goal_bead_radius else bead_radius in
-
+  
   (* Display jth bead *)
-  let rec create_spiral_beads j acc =
+  let rec create_spiral_beads j acc bead_id =
     if j >= num_beads then List.rev acc
     else
       let j_float = Float.of_int j in
       let pit_index_float = Float.of_int pit_index in
+      let center_bead = (num_beads < 1 || num_beads > 5) in
+      let subtract_one = if center_bead then 1 else 0 in
+      let num_beads = num_beads - subtract_one in
 
       (* Diplay beads in a ring *)
-      let angle = if num_beads <= 1 then 0.0 else (pit_index_float +. j_float) *. (2.0 *. Float.pi) /. (float_of_int num_beads -. 1.0) in (* Convert degrees to radians *)
+      let angle = if num_beads <= 1 then 0.0 else j_float *. (2.0 *. Float.pi) /. (float_of_int num_beads -. 1.0) +. pit_index_float *. 0.5 in (* Convert degrees to radians *)
       let r = 25.0 in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
-      let dx = if j = 0 then 0.0 else r *. Float.cos angle in
-      let dy = if j = 0 then 0.0 else r *. Float.sin angle in
+      let dx = if j = 0 && center_bead then 0.0 else r *. Float.cos angle in
+      let dy = if j = 0 && center_bead then 0.0 else r *. Float.sin angle in
 
-      let color = colors.((pit_index + j) % 4) in
+      let color = colors.((bead_id) % 4) in
       let bead = create_bead ~cx:(cx +. dx) ~cy:(cy +. dy) ~radius ~color in
 
-      create_spiral_beads (j + 1) (bead :: acc)
+      create_spiral_beads (j + 1) (bead :: acc) (bead_id + 1)
   in
 
-  let beads = create_spiral_beads 0 [] in
+  let beads = create_spiral_beads 0 [] 0 in
 
   Vdom.Node.create_svg
     "svg"
