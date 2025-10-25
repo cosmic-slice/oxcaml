@@ -66,7 +66,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
   let radius = if is_goal then goal_bead_radius else bead_radius in
   
   (* Display jth bead *)
-  let rec create_spiral_beads j acc bead_id =
+  let rec create_spiral_beads j acc =
     if j >= num_beads then List.rev acc
     else
       let j_float = Float.of_int j in
@@ -83,13 +83,13 @@ let render_beads ~num_beads ~is_goal ~pit_index =
       let dx = if j = 0 && center_bead then 0.0 else r *. Float.cos angle in
       let dy = if j = 0 && center_bead then 0.0 else r *. Float.sin angle in
 
-      let color = colors.((pit_index + bead_id) % 4) in
+      let color = colors.((pit_index + j) % 4) in
       let bead = create_bead ~cx:(cx +. dx) ~cy:(cy +. dy) ~radius ~color in
 
-      create_spiral_beads (j + 1) (bead :: acc) (bead_id + 1)
+      create_spiral_beads (j + 1) (bead :: acc)
   in
 
-  let beads = create_spiral_beads 0 [] 0 in
+  let beads = create_spiral_beads 0 [] in
 
   Vdom.Node.create_svg
     "svg"
