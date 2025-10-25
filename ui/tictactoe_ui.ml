@@ -76,7 +76,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
       let num_beads = num_beads - subtract_one in
 
       (* Diplay beads in a ring *)
-      let angle = if num_beads <= 1 then 0.0 else j_float *. (2.0 *. Float.pi) /. (float_of_int num_beads -. 1.0) +. pit_index_float *. 0.5 in (* Convert degrees to radians *)
+      let angle = if num_beads <= 1 then 0.0 else j_float *. (2.0 *. Float.pi) /. (float_of_int num_beads) +. pit_index_float *. 0.5 in (* Convert degrees to radians *)
       let r = 25.0 in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
