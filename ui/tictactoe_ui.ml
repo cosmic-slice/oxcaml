@@ -10,7 +10,7 @@ open! Bonsai.Let_syntax
    We need to append "%" to the attributes to place them relative to the pit's SVG area. *)
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
-let colors = [| "red"; "blue"; "green"; "yellow" |]
+let colors = [| "red"; "red"; "red"; "red" |]
 let bead_radius = 10.0 (* Use float for radius calculation *)
 let goal_bead_radius = 10.0
 
