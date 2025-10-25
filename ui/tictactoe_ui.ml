@@ -11,8 +11,8 @@ open! Bonsai.Let_syntax
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 
 let colors = [| "red"; "blue"; "green"; "yellow" |]
-let bead_radius = "10%" (* Use float for radius calculation *)
-let goal_bead_radius = "10%"
+let bead_radius = 10.0 (* Use float for radius calculation *)
+let goal_bead_radius = 10.0
 
 (* IDs map to board positions in circular order, same as your JS/HTML *)
 let ids = 
@@ -28,7 +28,7 @@ let create_bead ~cx ~cy ~radius ~color =
       ~attrs:
         [ Vdom.Attr.create "cx" (sprintf "%.1f%%" cx) (* Append % for placement relative to pit *)
         ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy) (* Append % for placement relative to pit *)
-        ; Vdom.Attr.create "r" radius
+        ; Vdom.Attr.create "r" (sprintf "%.1f%%" radius)
         ; Vdom.Attr.create "fill" color
         ]
       []
@@ -39,7 +39,7 @@ let create_bead ~cx ~cy ~radius ~color =
       ~attrs:
         [ Vdom.Attr.create "cx" (sprintf "%.1f%%" (cx +. 2.0)) (* Slight offset for highlight *)
         ; Vdom.Attr.create "cy" (sprintf "%.1f%%" (cy +. 2.0)) (* Slight offset for highlight *)
-        ; Vdom.Attr.create "r" (sprintf "%.1f%%" (Float.of_string radius *. 0.4)) (* Smaller radius for highlight *)
+        ; Vdom.Attr.create "r" (sprintf "%.1f%%" (radius *. 0.4)) (* Smaller radius for highlight *)
         ; Vdom.Attr.create "fill" "white"
         ; Vdom.Attr.create "opacity" "0.6"
         ]
