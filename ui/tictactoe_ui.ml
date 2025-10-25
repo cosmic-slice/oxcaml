@@ -38,16 +38,15 @@ let render_beads ~num_beads ~is_goal ~pit_index =
   let cy = 50.0 in (* Center Y *)
   let radius = if is_goal then goal_bead_radius else bead_radius in
 
-  (* Constants for the spiral path *)
-  (* Function to calculate the position for the j-th bead in a spiral *)
+  (* Display jth bead *)
   let rec create_spiral_beads j acc =
     if j >= num_beads then List.rev acc
     else
       let j_float = Float.of_int j in
 
-      (* Archimedean spiral formula: r = a * theta *)
+      (* Diplay beads in a ring *)
       let angle = if num_beads = 0 then 0.0 else j_float *. (2.0 *. Float.pi) /. float_of_int num_beads in (* Convert degrees to radians *)
-      let r = 30.0 in
+      let r = 20.0 in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
       let dx = r *. Float.cos angle in
@@ -71,8 +70,6 @@ let render_beads ~num_beads ~is_goal ~pit_index =
     beads
 ;;
 
-(* --- Mancala Board Component --- *)
-
 let mancala_board ~(game_state : Game_state.t) ~set_game_state =
   let is_game_over = Game_state.is_game_over game_state in
   
@@ -80,9 +77,14 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
     let num_beads = game_state.board.(board_index) in
     let id_class = ids.(board_index) in
     let beads_svg = render_beads ~num_beads ~is_goal ~pit_index:board_index in
-    
+    let belongsToPlayer =
+      match player_class, game_state.decision with
+      | "p1", Playing { whose_turn = Players.PlayerOne } -> true
+      | "p2", Playing { whose_turn = Players.PlayerTwo } -> true
+      | _ -> false
+    in
     let maybe_clickable_attr =
-      if is_game_over || is_goal || Option.is_none move_number then
+      if not belongsToPlayer || is_game_over || is_goal || Option.is_none move_number then
         Vdom.Attr.empty
       else
         let move = Option.value_exn move_number in
