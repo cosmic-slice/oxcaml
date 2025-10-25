@@ -22,15 +22,30 @@ let ids =
 (* --- SVG Rendering Functions --- *)
 
 let create_bead ~cx ~cy ~radius ~color =
-  Vdom.Node.create_svg
-    "circle"
-    ~attrs:
-      [ Vdom.Attr.create "cx" (sprintf "%.1f%%" cx) (* Append % for placement relative to pit *)
-      ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy) (* Append % for placement relative to pit *)
-      ; Vdom.Attr.create "r" radius
-      ; Vdom.Attr.create "fill" color
-      ]
-    []
+  let base = 
+    Vdom.Node.create_svg
+      "circle"
+      ~attrs:
+        [ Vdom.Attr.create "cx" (sprintf "%.1f%%" cx) (* Append % for placement relative to pit *)
+        ; Vdom.Attr.create "cy" (sprintf "%.1f%%" cy) (* Append % for placement relative to pit *)
+        ; Vdom.Attr.create "r" radius
+        ; Vdom.Attr.create "fill" color
+        ]
+      []
+  in
+  let highlight = 
+    Vdom.Node.create_svg
+      "circle"
+      ~attrs:
+        [ Vdom.Attr.create "cx" (sprintf "%.1f%%" (cx +. 2.0)) (* Slight offset for highlight *)
+        ; Vdom.Attr.create "cy" (sprintf "%.1f%%" (cy +. 2.0)) (* Slight offset for highlight *)
+        ; Vdom.Attr.create "r" (sprintf "%.1f%%" (Float.of_string radius *. 0.4)) (* Smaller radius for highlight *)
+        ; Vdom.Attr.create "fill" "white"
+        ; Vdom.Attr.create "opacity" "0.6"
+        ]
+      []
+  in
+  [ base; highlight ]
 ;;
 
 let render_beads ~num_beads ~is_goal ~pit_index =
@@ -67,7 +82,7 @@ let render_beads ~num_beads ~is_goal ~pit_index =
       ; Vdom.Attr.create "height" "100%"
       ; viewbox
       ]
-    beads
+    (List.concat beads)
 ;;
 
 let mancala_board ~(game_state : Game_state.t) ~set_game_state =
