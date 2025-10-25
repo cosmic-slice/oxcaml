@@ -70,14 +70,15 @@ let render_beads ~num_beads ~is_goal ~pit_index =
     if j >= num_beads then List.rev acc
     else
       let j_float = Float.of_int j in
+      let pit_index_float = Float.of_int pit_index in
 
       (* Diplay beads in a ring *)
-      let angle = if num_beads = 0 then 0.0 else j_float *. (2.0 *. Float.pi) /. float_of_int num_beads in (* Convert degrees to radians *)
-      let r = 20.0 in
+      let angle = if num_beads <= 1 then 0.0 else (pit_index_float +. j_float) *. (2.0 *. Float.pi) /. (float_of_int num_beads -. 1.0) in (* Convert degrees to radians *)
+      let r = 25.0 in
 
       (* Convert polar (r, angle) to Cartesian (dx, dy) *)
-      let dx = r *. Float.cos angle in
-      let dy = r *. Float.sin angle in
+      let dx = if j = 0 then 0.0 else r *. Float.cos angle in
+      let dy = if j = 0 then 0.0 else r *. Float.sin angle in
 
       let color = colors.((pit_index + j) % 4) in
       let bead = create_bead ~cx:(cx +. dx) ~cy:(cy +. dy) ~radius ~color in
