@@ -71,8 +71,8 @@ let render_beads ~num_beads ~is_goal ~pit_index =
     else
       let j_float = Float.of_int j in
       let pit_index_float = Float.of_int pit_index in
-      let center_bead = (num_beads < 1 || num_beads > 5) in
-      let subtract_one = if center_bead then 1 else 0 in
+      let center_bead = (num_beads = 1 || num_beads > 5) in
+      let subtract_one = if center_bead && num_beads > 1 then 1 else 0 in
       let num_beads = num_beads - subtract_one in
 
       (* Diplay beads in a ring *)
