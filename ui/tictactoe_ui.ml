@@ -192,17 +192,17 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
     Vdom.Node.div ~attrs:[ Vdom.Attr.id "board" ] [ p1_goal; middle_rows; p2_goal ]
   in
   let player1_score =
-    Vdom.Node.h1
+    Vdom.Node.h2
       ~attrs:[ Vdom.Attr.id "player1_score" ]
       [ Vdom.Node.text
           (sprintf "Player 1: %d" (Game_state.get_score game_state Players.PlayerOne))
       ]
   in
   let player2_score =
-    Vdom.Node.h1
+    Vdom.Node.h2
       ~attrs:[ Vdom.Attr.id "player1_score" ]
       [ Vdom.Node.text
-          (sprintf "Player 1: %d" (Game_state.get_score game_state Players.PlayerTwo))
+          (sprintf "Player 2: %d" (Game_state.get_score game_state Players.PlayerTwo))
       ]
   in
   Vdom.Node.div ~attrs:[ Vdom.Attr.class_ "game" ] [ player1_score; board; player2_score ]
