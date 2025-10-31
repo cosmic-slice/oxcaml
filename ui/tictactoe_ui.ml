@@ -195,17 +195,33 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
     Vdom.Node.h2
       ~attrs:[ Vdom.Attr.id "player1_score" ]
       [ Vdom.Node.text
-          (sprintf "Player 1: %d" (Game_state.get_score game_state Players.PlayerOne))
+          (sprintf "Player 1:\n%d" (Game_state.get_score game_state Players.PlayerOne))
       ]
   in
   let player2_score =
     Vdom.Node.h2
       ~attrs:[ Vdom.Attr.id "player1_score" ]
       [ Vdom.Node.text
-          (sprintf "Player 2: %d" (Game_state.get_score game_state Players.PlayerTwo))
+          (sprintf "Player 2:\n%d" (Game_state.get_score game_state Players.PlayerTwo))
       ]
   in
-  Vdom.Node.div ~attrs:[ Vdom.Attr.class_ "game" ] [ player1_score; board; player2_score ]
+  let score_display = 
+    Vdom.Node.div
+      ~attrs:[ Vdom.Attr.id "score_dissplay" ]
+      [ player1_score; player2_score]
+  in
+  let game_status =
+    let status_text =
+      match game_state.decision with
+      | Playing { whose_turn = Players.PlayerOne } -> "Player 1's Turn"
+      | Playing { whose_turn = Players.PlayerTwo } -> "Player 2's Turn"
+      | Winner Players.PlayerOne -> "Game Over! Player 1 Wins!"
+      | Winner Players.PlayerTwo -> "Game OVer! Player 2 Wins!"
+      | Tie -> "Game Over! It's a Tie!"
+    in
+    Vdom.Node.h2 ~attrs:[ Vdom.Attr.id "status" ] [ Vdom.Node.text status_text ]
+  in
+  Vdom.Node.div ~attrs:[ Vdom.Attr.class_ "game" ] [ score_display; board; game_status ]
 ;;
 
 let app =

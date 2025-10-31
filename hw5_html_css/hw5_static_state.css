@@ -48,6 +48,7 @@ input {
     position: relative;
     display: flex;
     justify-content: space-evenly;
+    flex-direction: column;
 }
 
 /* ----------------------------------------------------------------
