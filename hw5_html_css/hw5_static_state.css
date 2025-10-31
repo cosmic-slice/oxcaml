@@ -126,7 +126,7 @@ input {
     justify-content: center;
 
     /* Added smooth transition for hover effect */
-    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    transition: transform 0.2s ease-out;
     cursor: pointer;
 }
 
