@@ -115,12 +115,17 @@ input {
     top: 5%;
     left: 50%;
     transform: translateX(-50%);
-    font-size: clamp(1rem, 2.5vmin, 2rem);
+    font-size: clamp(0.5rem, 2.5vmin, 1rem);
     font-weight: 600;
     color: #333333;
     display: flex;
     flex-direction: row;
-    justify-content: space-evenly;
+    justify-content: space-between;
+}
+
+#status {
+    font-size: clamp(0.5rem, 2.5vmin, 1rem);
+    text-align: center;
 }
 
 /* --- Playing Pits --- */
