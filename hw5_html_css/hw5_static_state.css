@@ -126,6 +126,7 @@ input {
 #status {
     font-size: clamp(0.5rem, 2.5vmin, 1rem);
     text-align: center;
+    color: #333333;
 }
 
 /* --- Playing Pits --- */

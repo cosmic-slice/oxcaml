@@ -195,20 +195,22 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
     Vdom.Node.h2
       ~attrs:[ Vdom.Attr.id "player1_score" ]
       [ Vdom.Node.text
-          (sprintf "Player 1 Score:\n%d" (Game_state.get_score game_state Players.PlayerOne))
+          (sprintf
+             "Player 1 Score:\n%d"
+             (Game_state.get_score game_state Players.PlayerOne))
       ]
   in
   let player2_score =
     Vdom.Node.h2
       ~attrs:[ Vdom.Attr.id "player1_score" ]
       [ Vdom.Node.text
-          (sprintf "Player 2 Score:\n%d" (Game_state.get_score game_state Players.PlayerTwo))
+          (sprintf
+             "Player 2 Score:\n%d"
+             (Game_state.get_score game_state Players.PlayerTwo))
       ]
   in
-  let score_display = 
-    Vdom.Node.div
-      ~attrs:[ Vdom.Attr.id "score_display" ]
-      [ player1_score; player2_score]
+  let score_display =
+    Vdom.Node.div ~attrs:[ Vdom.Attr.id "score_display" ] [ player1_score; player2_score ]
   in
   let game_status =
     let status_text =
