@@ -110,6 +110,19 @@ input {
     gap: 0.5rem; 
 }
 
+#score_display {
+    position: absolute;
+    top: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(1rem, 2.5vmin, 2rem);
+    font-weight: 600;
+    color: #333333;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
 /* --- Playing Pits --- */
 .pit {
     width: calc((100% - (0.5rem * 5)) / 6);
