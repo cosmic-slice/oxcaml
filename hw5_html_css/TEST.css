@@ -129,7 +129,6 @@ svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s;
   text-align: center;
   color: white;
 }
@@ -181,7 +180,7 @@ svg {
 
 .score {
   max-width: 25vh;
-  transition: transform 0.5s;
+  transition: transform 0.1s;
 }
 
 /* The game status is slightly larger than the rest of the HUD text */
@@ -191,7 +190,11 @@ svg {
   max-width: 20vw;
 }
 
-.pit:hover, .score:hover {
+.pit, .score, #game_status {
+  transition: transform 0.1s;
+}
+
+.pit:hover, .score:hover, #game_status:hover {
   transform: scale(1.1);
 }
 
