@@ -104,7 +104,7 @@ svg {
   padding: 2.5%;
   translate: -2.5%;
   background-color: #cf752b;
-  border-radius: 20px;
+  border-radius: 5vh;
   display: flex;
   justify-content: space-evenly;
   align-items: center;
