@@ -10,6 +10,12 @@ It is possible to use instead:
 The flexbox approach is probably more widely supported,
 while the Grid approach with place-items: center is more concise.
 */
+:root {
+  --board-brown: #cf752b;
+  --pit-brown: #ab5130;
+  --dark-brown: #7d3833;
+}
+
 body {
   background-color: rgb(250, 250, 250);
   margin: 0;
@@ -102,30 +108,35 @@ svg {
   width: 100%;
   height: 30%;
   padding: 2.5%;
-  translate: -2.5%;
-  background-color: #cf752b;
+  padding-left: 5%;
+  padding-right: 5%;
+  translate: -5%;
+  background-color: var(--board-brown);
+  border-color: var(--dark-brown);
+  border-width: 0 0 1.5vh 0;
+  border-style: none none solid none;
   border-radius: 5vh;
   display: flex;
-  justify-content: space-evenly;
+  justify-content: space-between;
   align-items: center;
 }
 
 .goal {
-  background-color: #ab5130;
-  border-color: #7d3833;
+  background-color: var(--pit-brown);
+  border-color: var(--dark-brown);
   border-style: solid none solid none;
-  border-width: 1.5vh 0vh 0.5vh 0vh;
+  border-width: 1vh 0vh 0.5vh 0vh;
   border-radius: 10vh;
   height: 80%;
   width: 10%;
 }
 
 .pit {
-  background-color: #ab5130;
+  background-color: var(--pit-brown);
+  border-color: var(--dark-brown);
   border-radius: 10vh;
-  border-color: #7d3833;
   border-style: solid none solid none;
-  border-width: 1.5vh 0vh 0.5vh 0vh;
+  border-width: 1vh 0vh 0.5vh 0vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,15 +153,11 @@ svg {
   width: 70%;
 }
 
-#top_row {
+#top_row, #bottom_row {
+  margin-left: 1vh;
+  margin-right: 1vh;
   display: flex;
-  gap: 5px;
-  height: 36%;
-}
-
-#bottom_row {
-  display: flex;
-  gap: 5px;
+  gap: 1.5vh;
   height: 36%;
 }
 
@@ -190,6 +197,7 @@ svg {
   max-width: 20vw;
 }
 
+/* All of these elements are interactable and expand on hover */
 .pit, .score, #game_status {
   transition: transform 0.1s;
 }
@@ -198,6 +206,7 @@ svg {
   transform: scale(1.1);
 }
 
+/* Align the bead counts above and below the board */
 #top_numbers, #bottom_numbers {
   margin-left: 9vh;
   margin-right: 9vh;
