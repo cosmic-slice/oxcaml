@@ -6,8 +6,7 @@ open! Bonsai.Let_syntax
 
 (* --- Constants --- *)
 
-(* For the beads, we use the user coordinate system (0-100) inside the SVG viewbox.
-   We need to append "%" to the attributes to place them relative to the pit's SVG area. *)
+(* Create a viewbox for placing SVG beads in the pits *)
 let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 let colors = [| "red"; "blue"; "green"; "yellow" |]
 let bead_radius = 10.0 (* Use float for radius calculation *)
