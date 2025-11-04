@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+
+<head>
+    <meta charset="utf-8">
+    <title>Mancala</title>
+    <meta name="description" content="Mancala game">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" type="text/css" href="hw5_static_state.css">
+    <link rel="icon" href="data:,">
+</head>
+
+<body>
+    <div class="game">
+      <!-- HUD Elements -->
+      <div class="hud">
+        <div class="score"><p id="player1_score"></p></div>
+        <p id="game_status"></p>
+        <div class="score"><p id="player2_score"></p></div>
+      </div>
+      
+        <!-- First row: ['X', 'O', ''] -->
+        <div id="top_numbers"></div>
+        <div id="board">
+            <div class="goal" id="p1_goal"></div>
+            <div id="middle_rows">
+              <div id="top_row">
+                <div class="pit p1" id="p1_1"></div>
+                <div class="pit p1" id="p1_2"></div>
+                <div class="pit p1" id="p1_3"></div>
+                <div class="pit p1" id="p1_4"></div>
+                <div class="pit p1" id="p1_5"></div>
+                <div class="pit p1" id="p1_6"></div>
+              </div>
+              <div id="bottom_row">
+                <div class="pit p2" id="p2_1"></div>
+                <div class="pit p2" id="p2_2"></div>
+                <div class="pit p2" id="p2_3"></div>
+                <div class="pit p2" id="p2_4"></div>
+                <div class="pit p2" id="p2_5"></div>
+                <div class="pit p2" id="p2_6"></div>
+              </div>
+              </div>
+            <div class="goal" id="p2_goal"></div>
+        </div>
+        <div id="bottom_numbers"></div>
+        <div id="button_panel">
+          <button>Local Multiplayer</button>
+          <button>Player vs Computer</button>
+          <button>Cloud Multiplayer</button>
+        </div>
+      
+        <script>
+          const svgNS = "http://www.w3.org/2000/svg";
+          let board = [16, 2, 0, 4, 0, 1, 1, 23, 0, 0, 0, 0, 0, 1];
+          let ids = ["p1_goal", "p2_1", "p2_2", "p2_3", "p2_4", "p2_5", "p2_6", "p2_goal", "p1_6", "p1_5", "p1_4", "p1_3", "p1_2", "p1_1"];
+          
+          // Bead Constants
+          let colors = ["red", "blue", "green", "yellow"];
+          let cx = 50;
+          let cy = 50;
+          let beadRadius = 1; // 1 vh
+          let distributionRadius = 25;
+          let centerThreshold = 6; // Min number of beads to get center one 
+        
+          function createBeadAt (x, y, radius, color) {
+            // Draw base bead circle
+            let bead = document.createElementNS(svgNS,"circle");
+            bead.setAttribute("cx", `${x}%`);
+            bead.setAttribute("cy", `${y}%`);
+            bead.setAttribute("r", `${radius}vh`);
+            bead.setAttribute("fill", color);
+            
+            // Draw shadow circle
+            let shadow = document.createElementNS(svgNS, "circle");
+            shadow.setAttribute("cx", `${x}%`);
+            shadow.setAttribute("cy", `calc(${y}% + 1.5px)`);
+            shadow.setAttribute("r", `${radius}vh`);
+            shadow.setAttribute("fill", "black");
+            shadow.setAttribute("opacity", 0.5);
+            
+            // Draw highlight circle
+            let highlight = document.createElementNS(svgNS, "circle");
+            highlight.setAttribute("cx", `calc(${x}% + 0.33vh)`);
+            highlight.setAttribute("cy", `calc(${y}% - 0.33vh)`);
+            highlight.setAttribute("r", `${radius * 0.33}vh`);
+            highlight.setAttribute("fill", "white");
+            highlight.setAttribute("opacity", 0.5);
+            
+            return [shadow, bead, highlight];
+          }
+
+          // Iterate through board and create beads
+          for (let i = 0; i < ids.length; i++) {
+            let pit = document.getElementById(ids[i]);
+            let numBeads = board[i];
+
+            // Create SVG container for beads
+            let beads = document.createElementNS(svgNS, "svg");
+            beads.setAttribute("width", "100%");
+            beads.setAttribute("height", "100%");
+
+            // Distribute beads in a circular pattern inside the pit
+            for (let j = 0; j < numBeads; j++) {
+              let dx, dy;
+              
+              // Determine whether the first beed should be centered or not
+              let isCenterBead = + (numBeads === 1 || numBeads >= centerThreshold);
+              if (j === 0 && isCenterBead) {
+                // If it is, place it at the center
+                dx = 0;
+                dy = 0;
+              } else {
+                // Calculate next direction and position differential
+                let angle = j * (2 * Math.PI / (numBeads - isCenterBead)) + i;
+                dx = distributionRadius * Math.cos(angle);
+                dy = distributionRadius * Math.sin(angle); 
+              }
+              
+              // Prepare values for creating bead
+              let x = cx + dx;
+              let y = cy + dy;
+              let color = colors[(i + j) % colors.length];
+              let bead = createBeadAt(x, y, beadRadius, color);
+              
+              // Add all bead components to the DOM
+              for (let k = 0; k < bead.length; k++) {
+                beads.appendChild(bead[k]); 
+              }
+            }
+          
+            // Add beads to the pits
+            pit.appendChild(beads);
+          }
+          
+          // Select the number displays above and below the board
+          let top_numbers = document.getElementById("top_numbers");
+          let bottom_numbers = document.getElementById("bottom_numbers");
+          
+          // Put the correct numbers in each position
+          for (let i = 1; i < board.length / 2; i++) {
+            let top_label = document.createElement("p");
+            top_label.innerText = board[board.length - i];
+            
+            let bottom_label = document.createElement("p");
+            bottom_label.innerText = board[i];
+            
+            top_numbers.appendChild(top_label)
+            bottom_numbers.appendChild(bottom_label)
+          }
+          
+          // Update HUD text
+          let p1_score = document.getElementById("player1_score");
+          p1_score.innerHTML = `<strong>PLAYER 1</strong> <br> Score: ${board[0]}`;
+          
+          let p2_score = document.getElementById("player2_score");
+          p2_score.innerHTML = `<strong>PLAYER 2</strong> <br> Score: ${board[board.length / 2]}`;
+          
+          let game_status = document.getElementById("game_status");
+          game_status.innerText = "P1's Turn!";
+        </script>
+    </div>
+</body>
+
+</html>
