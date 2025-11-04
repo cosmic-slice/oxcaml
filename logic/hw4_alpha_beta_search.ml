@@ -1,5 +1,5 @@
 open! Core
-open Hw2_tictactoe_logic
+open Hw2_mancala_logic
 
 let heuristic_value (node : Game_state.t) =
   match node.decision with

@@ -1,8 +1,8 @@
 open! Core
-open Tictactoe_logic_library
-open Hw2_tictactoe_logic
+open Mancala_logic_library
+open Hw2_mancala_logic
 open Hw4_alpha_beta_search
-open Hw3_tictactoe_logic_test
+open Hw3_mancala_logic_test
 
 let print_computer_move board turn max_depth =
   let state : Game_state.t =
