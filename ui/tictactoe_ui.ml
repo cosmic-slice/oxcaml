@@ -13,7 +13,7 @@ let colors = [| "red"; "blue"; "green"; "yellow" |]
 let bead_radius = 10.0 (* Use float for radius calculation *)
 let goal_bead_radius = 10.0
 
-(* IDs map to board positions in circular order, same as your JS/HTML *)
+(* IDs map to board positions in circular order *)
 let ids =
   [| "p1_goal"
    ; "p2_1"
