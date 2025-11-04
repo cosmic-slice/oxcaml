@@ -5,9 +5,8 @@ open Hw2_tictactoe_logic
 open Virtual_dom
 open! Bonsai.Let_syntax
 
-(* All of the bead constants and SVG viewbox are declared here *)
+(* All of the bead constants are declared here *)
 
-let viewbox = Vdom.Attr.create "viewBox" "0 0 100 100"
 let colors = [| "red"; "blue"; "green"; "yellow" |]
 let bead_radius = 1.0 (* vh units *)
 let distribution_radius = 25.0
