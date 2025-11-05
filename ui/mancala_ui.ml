@@ -204,7 +204,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
   
   let player_label =
     match game_mode with
-    | Game_mode.PlayerVsComputer -> "COMPUTER"
+    | Game_mode.PlayerVsComputer -> "AI"
     | _ -> "PLAYER 2"
   in
 
