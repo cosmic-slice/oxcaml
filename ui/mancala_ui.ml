@@ -2,8 +2,18 @@
 open! Core
 open Mancala_logic_library
 open Hw2_mancala_logic
+open Hw4_alpha_beta_search
 open Virtual_dom
 open! Bonsai.Let_syntax
+
+(* Defining a new struct to handle game modes *)
+module Game_mode = struct 
+  type t =
+    | LocalMultiplayer
+    | PlayerVsComputer
+    | CloudMultiplayer
+  [@@deriving sexp, compare, equal]
+end
 
 (* All of the bead constants are declared here *)
 
@@ -13,6 +23,7 @@ let distribution_radius = 25.0
 let center_threshold = 6
 let cx = 50.0
 let cy = 50.0
+let computerDepth = 3
 
 (* IDs map to board positions in circular order *)
 let ids =
@@ -109,19 +120,32 @@ let render_beads ~num_beads ~pit_index =
     (List.concat beads)
 ;;
 
-let mancala_board ~(game_state : Game_state.t) ~set_game_state =
+let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Game_mode.t) ~set_game_mode =
   let is_game_over = Game_state.is_game_over game_state in
   let board = game_state.board in
-  
+
+  let handle_move (new_game_state : Game_state.t) =
+    match game_mode, new_game_state.decision with
+    | Game_mode.PlayerVsComputer, Playing { whose_turn = Players.PlayerTwo } ->
+        let ai_move = alpha_beta new_game_state ~depth:computerDepth |> Option.value_exn in
+        (match Game_state.make_move new_game_state ai_move with
+         | Error _ -> raise_s [%message "AI move failed" (ai_move : int)]
+         | Ok ai_game_state -> 
+             Ui_effect.Many [ set_game_state new_game_state; set_game_state ai_game_state ])
+    | _ -> set_game_state new_game_state
+  in
+
   let render_pit ~board_index ~is_goal ~player_class ~move_number =
     let num_beads = board.(board_index) in
     let id_class = ids.(board_index) in
     let beads_svg = render_beads ~num_beads ~pit_index:board_index in
     
+    (* Determine whether a pit belongs to the current player *)
     let belongs_to_player =
-      match player_class, game_state.decision with
-      | "p1", Playing { whose_turn = Players.PlayerOne } -> true
-      | "p2", Playing { whose_turn = Players.PlayerTwo } -> true
+      match player_class, game_state.decision, game_mode with
+      | "p1", Playing { whose_turn = Players.PlayerOne }, _ -> true
+      | "p2", Playing { whose_turn = Players.PlayerTwo }, Game_mode.LocalMultiplayer -> true
+      | "p2", Playing { whose_turn = Players.PlayerTwo }, Game_mode.CloudMultiplayer -> true
       | _ -> false
     in
     
@@ -133,7 +157,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
         Vdom.Attr.on_click (fun _ ->
           match Game_state.make_move game_state move with
           | Error _ -> raise_s [%message "Invalid move" (move : int)]
-          | Ok new_game_state -> set_game_state new_game_state))
+          | Ok new_game_state -> handle_move new_game_state))
     in
     
     let class_list =
@@ -158,11 +182,17 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
       ]
   in
   
+  let player_label =
+    match game_mode with
+    | Game_mode.PlayerVsComputer -> "PLAYER 2 (AI)"
+    | _ -> "PLAYER 2"
+  in
+
   let player2_score =
     Vdom.Node.create
       "p"
       ~attrs:[ Vdom.Attr.id "player2_score" ]
-      [ Vdom.Node.create ~attrs:[] "strong" [ Vdom.Node.text "PLAYER 2" ]
+      [ Vdom.Node.create ~attrs:[] "strong" [ Vdom.Node.text player_label ]
       ; Vdom.Node.create ~attrs:[] "br" []
       ; Vdom.Node.text (sprintf "Score: %d" (Game_state.get_score game_state Players.PlayerTwo))
       ]
@@ -262,18 +292,38 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state =
          let board_index = i + 1 in
          Vdom.Node.create ~attrs:[] "p" [ Vdom.Node.text (Int.to_string board.(board_index)) ]))
   in
-  
+
   (* Button panel *)
   let button_panel =
+    let create_mode_button ~label ~mode ~button_id =
+    let is_active = Game_mode.equal game_mode mode in
     Vdom.Node.create
-      "div"
-      ~attrs:[ Vdom.Attr.id "button_panel" ]
-      [ Vdom.Node.create ~attrs:[] "button" [ Vdom.Node.text "Local Multiplayer" ]
-      ; Vdom.Node.create ~attrs:[] "button" [ Vdom.Node.text "Player vs Computer" ]
-      ; Vdom.Node.create ~attrs:[] "button" [ Vdom.Node.text "Cloud Multiplayer" ]
+      "button"
+      ~attrs:
+        [ Vdom.Attr.id button_id
+        ; (if is_active then Vdom.Attr.classes ["active"] else Vdom.Attr.empty)
+        ; Vdom.Attr.on_click (fun _ -> 
+          let init_state = 
+            Game_state.create ~num_squares_per_side:6 ~init_beads:4
+            |> Result.ok
+            |> Option.value_exn
+          in
+          Ui_effect.Many 
+            [ set_game_mode mode
+            ; set_game_state init_state
+            ])
+        ]
+      [ Vdom.Node.text label ]
+    in
+    Vdom.Node.create
+    "div"
+    ~attrs:[ Vdom.Attr.id "button_panel" ]
+      [ create_mode_button ~label:"Local Multiplayer" ~mode:Game_mode.LocalMultiplayer ~button_id:"localMultiplayer"
+      ; create_mode_button ~label:"Player vs Computer" ~mode:Game_mode.PlayerVsComputer ~button_id:"playerVsComputer"
+      ; create_mode_button ~label:"Cloud Multiplayer" ~mode:Game_mode.CloudMultiplayer ~button_id:"cloudMultiplayer"
       ]
   in
-  
+
   Vdom.Node.create
     "div"
     ~attrs:[ Vdom.Attr.class_ "game" ]
@@ -289,9 +339,14 @@ let app =
   let%sub game_state, set_game_state =
     Bonsai.state ~default_model:initial_state (module Game_state)
   in
+  let%sub game_mode, set_game_mode =
+    Bonsai.state ~default_model:Game_mode.LocalMultiplayer (module Game_mode)
+  in
   let%arr game_state = game_state
-  and set_game_state = set_game_state in
-  mancala_board ~game_state ~set_game_state
+  and set_game_state = set_game_state
+  and game_mode = game_mode
+  and set_game_mode = set_game_mode in
+  mancala_board ~game_state ~set_game_state ~game_mode ~set_game_mode
 ;;
 
 let () = Bonsai_web.Start.start app
