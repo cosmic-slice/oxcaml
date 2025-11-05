@@ -124,15 +124,35 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
   let is_game_over = Game_state.is_game_over game_state in
   let board = game_state.board in
 
+  let delay n =
+    let rec wait n = if n <= 0 then () else wait (n - 1) in
+    wait (n * 1000000)  (* Adjust this number - bigger = longer delay *)
+  in
+
   let handle_move (new_game_state : Game_state.t) =
-    match game_mode, new_game_state.decision with
-    | Game_mode.PlayerVsComputer, Playing { whose_turn = Players.PlayerTwo } ->
-        let ai_move = alpha_beta new_game_state ~depth:computerDepth |> Option.value_exn in
-        (match Game_state.make_move new_game_state ai_move with
-         | Error _ -> raise_s [%message "AI move failed" (ai_move : int)]
-         | Ok ai_game_state -> 
-             Ui_effect.Many [ set_game_state new_game_state; set_game_state ai_game_state ])
-    | _ -> set_game_state new_game_state
+    match game_mode with
+    | Game_mode.PlayerVsComputer ->
+        (* Recursive function to let AI keep moving if it gets extra turns *)
+        let rec make_ai_moves_if_needed (current_state : Game_state.t) =
+          match current_state.decision with
+          | Playing { whose_turn = Players.PlayerTwo } ->
+              delay 5;
+              let ai_move = alpha_beta current_state ~depth:computerDepth |> Option.value_exn in
+              (match Game_state.make_move current_state ai_move with
+              | Error _ -> raise_s [%message "AI move failed" (ai_move : int)]
+              | Ok ai_game_state -> 
+                  (* Check if AI gets another turn and recurse *)
+                  set_game_state ai_game_state :: make_ai_moves_if_needed ai_game_state)
+          | _ -> 
+              (* No longer AI's turn or game over *)
+              []
+        in
+        (* Start with the human's move, then add all AI moves *)
+        let all_effects = set_game_state new_game_state :: make_ai_moves_if_needed new_game_state in
+        Ui_effect.Many all_effects
+    | _ -> 
+        (* LocalMultiplayer or CloudMultiplayer *)
+        set_game_state new_game_state
   in
 
   let render_pit ~board_index ~is_goal ~player_class ~move_number =
@@ -184,7 +204,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
   
   let player_label =
     match game_mode with
-    | Game_mode.PlayerVsComputer -> "PLAYER 2 (AI)"
+    | Game_mode.PlayerVsComputer -> "COMPUTER"
     | _ -> "PLAYER 2"
   in
 
