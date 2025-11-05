@@ -166,10 +166,8 @@
               let button = document.getElementById(mode);
               button.addEventListener("click", (event) => {
                 game_mode = mode;
-                console.log(game_mode);
                 
                 let active_button = document.getElementsByClassName("active");
-                console.log(active_button);
                 active_button[0].classList.remove("active");
                 button.classList.add("active");
               });
