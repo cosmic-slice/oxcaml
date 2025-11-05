@@ -14,6 +14,7 @@ while the Grid approach with place-items: center is more concise.
   --board-brown: #cf752b;
   --pit-brown: #ab5130;
   --dark-brown: #7d3833;
+  --selection-blue: #a1c5ff;
 }
 
 body {
@@ -158,7 +159,7 @@ svg {
 /* CSS animations to make the X/O appear slowly
    (the opacity will change from 0.1 to 1 in 0.5s). */
 .slowly_appear {
-  animation: slowly_appear 0.1s linear;
+  animation: slowly_appear 0.5s linear;
 }
 
 @keyframes slowly_appear {
@@ -222,4 +223,8 @@ button {
   padding: 2vh;
   max-width: 100%;
   font-size: 3vh;
+}
+
+button.active {
+  background-color: var(--selection-blue);
 }

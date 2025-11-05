@@ -158,6 +158,23 @@
           
           let game_status = document.getElementById("game_status");
           game_status.innerText = "P1's Turn!";
+
+          // Add on click listeners for all the buttons
+          let button_ids = ["localMultiplayer", "playerVsComputer", "cloudMultiplayer"];
+          let game_mode = "localMultiplayer";
+          button_ids.forEach((mode) => {
+              let button = document.getElementById(mode);
+              button.addEventListener("click", (event) => {
+                game_mode = mode;
+                console.log(game_mode);
+                
+                let active_button = document.getElementsByClassName("active");
+                console.log(active_button);
+                active_button[0].classList.remove("active");
+                button.classList.add("active");
+              });
+            }
+          ); 
         </script>
     </div>
 </body>
