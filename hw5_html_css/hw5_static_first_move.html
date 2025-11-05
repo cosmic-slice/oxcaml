@@ -45,9 +45,9 @@
         </div>
         <div id="bottom_numbers"></div>
         <div id="button_panel">
-          <button>Local Multiplayer</button>
-          <button>Player vs Computer</button>
-          <button>Cloud Multiplayer</button>
+          <button id="localMultiplayer">Local Multiplayer</button>
+          <button id="playerVsComputer">Player vs Computer</button>
+          <button id="cloudMultiplayer">Cloud Multiplayer</button>
         </div>
       
         <script>
@@ -163,7 +163,7 @@
           let button_ids = ["localMultiplayer", "playerVsComputer", "cloudMultiplayer"];
           let game_mode = "localMultiplayer";
           document.getElementById(button_ids[0]).classList.add("active");
-          
+
           button_ids.forEach((mode) => {
               let button = document.getElementById(mode);
               button.addEventListener("click", (event) => {
