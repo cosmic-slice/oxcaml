@@ -162,6 +162,8 @@
           // Add on click listeners for all the buttons
           let button_ids = ["localMultiplayer", "playerVsComputer", "cloudMultiplayer"];
           let game_mode = "localMultiplayer";
+          document.getElementById(button_ids[0]).classList.add("active");
+          
           button_ids.forEach((mode) => {
               let button = document.getElementById(mode);
               button.addEventListener("click", (event) => {
