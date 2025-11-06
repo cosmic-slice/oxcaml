@@ -1,10 +1,28 @@
 (* Module for Firebase interaction with REST API *)
 
-(* firebase_rest.ml - Minimal Firebase using REST API *)
-(* This should compile with just: (libraries core js_of_ocaml) *)
-
 open! Core
 open Js_of_ocaml
+
+(* Characters available for the Game ID: A-Z, a-z, 0-9 *)
+let id_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+let id_len = 6
+
+(* Generates a random 6-character alphanumeric string *)
+let generate_game_id () : string =
+  let char_count = String.length id_chars in
+  
+  (* Generate a random integer in the range of valid chars *)
+  let random_int () = 
+    int_of_float (Js.to_float (Js.Unsafe.global##.Math##random) *. (float_of_int char_count))
+  in
+  let rec loop acc count =
+    if count = 0 then acc
+    else
+      let index = random_int () in
+      let char = id_chars.[index] in
+      loop (String.of_char char ^ acc) (count - 1)
+  in
+  loop "" id_len
 
 (* Simple HTTP request wrapper *)
 module Http = struct
@@ -115,9 +133,7 @@ let create_game ~num_squares_per_side ~init_beads ~player_id ~callback =
   (* Get current timestamp using JavaScript Date *)
   let date_obj = Js.Unsafe.new_obj Js.Unsafe.global##._Date [||] in
   let timestamp = Js.to_float (Js.Unsafe.meth_call date_obj "getTime" [||]) in
-  (* Remove dots from game_id - Firebase paths can't contain dots *)
-  let timestamp_int = Float.to_int timestamp in
-  let game_id = "game_" ^ Int.to_string timestamp_int in
+  let game_id = generate_game_id () in
   
   (* Initialize board *)
   let board = Array.create ~len:((num_squares_per_side * 2) + 2) init_beads in
