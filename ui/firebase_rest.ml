@@ -1,5 +1,8 @@
 (* Module for Firebase interaction with REST API *)
 
+(* firebase_rest.ml - Minimal Firebase using REST API *)
+(* This should compile with just: (libraries core js_of_ocaml) *)
+
 open! Core
 open Js_of_ocaml
 
@@ -112,7 +115,9 @@ let create_game ~num_squares_per_side ~init_beads ~player_id ~callback =
   (* Get current timestamp using JavaScript Date *)
   let date_obj = Js.Unsafe.new_obj Js.Unsafe.global##._Date [||] in
   let timestamp = Js.to_float (Js.Unsafe.meth_call date_obj "getTime" [||]) in
-  let game_id = "game_" ^ Float.to_string timestamp in
+  (* Remove dots from game_id - Firebase paths can't contain dots *)
+  let timestamp_int = Float.to_int timestamp in
+  let game_id = "game_" ^ Int.to_string timestamp_int in
   
   (* Initialize board *)
   let board = Array.create ~len:((num_squares_per_side * 2) + 2) init_beads in
