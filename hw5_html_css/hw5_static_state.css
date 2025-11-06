@@ -175,7 +175,7 @@ svg {
 .hud {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: center;
   font-size: 4vh;
   text-align: center;
 }

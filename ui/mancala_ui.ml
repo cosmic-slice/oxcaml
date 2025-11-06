@@ -4,6 +4,7 @@ open Mancala_logic_library
 open Hw2_mancala_logic
 open Hw4_alpha_beta_search
 open Virtual_dom
+open Core_unix
 open! Bonsai.Let_syntax
 
 (* Defining a new struct to handle game modes *)
@@ -124,11 +125,6 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
   let is_game_over = Game_state.is_game_over game_state in
   let board = game_state.board in
 
-  let delay n =
-    let rec wait n = if n <= 0 then () else wait (n - 1) in
-    wait (n * 1000000)  (* Adjust this number - bigger = longer delay *)
-  in
-
   let handle_move (new_game_state : Game_state.t) =
     match game_mode with
     | Game_mode.PlayerVsComputer ->
@@ -136,7 +132,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
         let rec make_ai_moves_if_needed (current_state : Game_state.t) =
           match current_state.decision with
           | Playing { whose_turn = Players.PlayerTwo } ->
-              delay 5;
+              sleep 5;
               let ai_move = alpha_beta current_state ~depth:computerDepth |> Option.value_exn in
               (match Game_state.make_move current_state ai_move with
               | Error _ -> raise_s [%message "AI move failed" (ai_move : int)]

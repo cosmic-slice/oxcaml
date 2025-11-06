@@ -1,6 +1,6 @@
 (executables
  (modes js)
  (names mancala_ui)
- (libraries bonsai.web core virtual_dom mancala_logic_library)
+ (libraries bonsai.web core virtual_dom mancala_logic_library core_unix)
  (preprocess
   (pps ppx_jane bonsai.ppx_bonsai)))
