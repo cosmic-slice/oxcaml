@@ -532,7 +532,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
   Vdom.Node.create
     "div"
     ~attrs:[ Vdom.Attr.class_ "game" ]
-    [ hud; cloud_panel; top_numbers; board_node; bottom_numbers; button_panel ]
+    [ hud; top_numbers; board_node; bottom_numbers; button_panel; cloud_panel ]
 ;;
 
 let app =
