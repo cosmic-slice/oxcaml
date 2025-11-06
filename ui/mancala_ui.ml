@@ -1,10 +1,10 @@
-
 open! Core
 open Mancala_logic_library
 open Hw2_mancala_logic
 open Hw4_alpha_beta_search
 open Virtual_dom
 open! Bonsai.Let_syntax
+open Js_of_ocaml
 
 (* Defining a new struct to handle game modes *)
 module Game_mode = struct 
@@ -15,17 +15,35 @@ module Game_mode = struct
   [@@deriving sexp, compare, equal]
 end
 
-(* All of the bead constants are declared here *)
+(* Cloud multiplayer state *)
+module Cloud_state = struct
+  type t = {
+    player_id: string;
+    current_game_id: string option;
+    is_player_one: bool;
+    game_id_input: string;
+  } [@@deriving sexp, equal]
+  
+  let default () = {
+    player_id = "player_" ^ Float.to_string (Js.to_float (Js.Unsafe.meth_call (Js.Unsafe.new_obj Js.Unsafe.global##._Date [||]) "getTime" [||]));
+    current_game_id = None;
+    is_player_one = true;
+    game_id_input = "";
+  }
+end
 
+(* Store the stop_polling function separately - not in state *)
+let stop_polling_ref : (unit -> unit) option ref = ref None
+
+(* All of the bead constants are declared here *)
 let colors = [| "red"; "blue"; "green"; "yellow" |]
-let bead_radius = 1.0 (* vh units *)
+let bead_radius = 1.0
 let distribution_radius = 25.0
 let center_threshold = 6
 let cx = 50.0
 let cy = 50.0
 let computerDepth = 3
 
-(* IDs map to board positions in circular order *)
 let ids =
   [| "p1_goal"; "p2_1"; "p2_2"; "p2_3"; "p2_4"; "p2_5"; "p2_6"
     ; "p2_goal"; "p1_6"; "p1_5"; "p1_4"; "p1_3"; "p1_2"; "p1_1"
@@ -33,9 +51,7 @@ let ids =
 ;;
 
 (* --- SVG Rendering Functions --- *)
-
 let create_bead_at ~x ~y ~radius ~color =
-  (* Draw shadow circle *)
   let shadow =
     Vdom.Node.create_svg
       "circle"
@@ -48,7 +64,6 @@ let create_bead_at ~x ~y ~radius ~color =
         ]
       []
   in
-  (* Draw base bead circle *)
   let bead =
     Vdom.Node.create_svg
       "circle"
@@ -60,7 +75,6 @@ let create_bead_at ~x ~y ~radius ~color =
         ]
       []
   in
-  (* Draw highlight circle *)
   let highlight =
     Vdom.Node.create_svg
       "circle"
@@ -83,15 +97,11 @@ let render_beads ~num_beads ~pit_index =
     else (
       let j_float = Float.of_int j in
       let pit_index_float = Float.of_int pit_index in
-      
-      (* Determine whether the first bead should be centered or not *)
       let is_center_bead = num_beads = 1 || num_beads >= center_threshold in
-      
       let dx, dy =
         if j = 0 && is_center_bead
         then 0.0, 0.0
         else (
-          (* Calculate next direction and position differential *)
           let num_distributed = if is_center_bead then num_beads - 1 else num_beads in
           let angle = 
             (j_float *. (2.0 *. Float.pi) /. float_of_int num_distributed) 
@@ -101,15 +111,12 @@ let render_beads ~num_beads ~pit_index =
           let dy = distribution_radius *. Float.sin angle in
           dx, dy)
       in
-      
-      (* Prepare values for creating bead *)
       let x = cx +. dx in
       let y = cy +. dy in
       let color = colors.((pit_index + j) % 4) in
       let bead = create_bead_at ~x ~y ~radius:bead_radius ~color in
       create_beads (j + 1) (bead :: acc))
   in
-  
   let beads = create_beads 0 [] in
   Vdom.Node.create_svg
     "svg"
@@ -120,19 +127,161 @@ let render_beads ~num_beads ~pit_index =
     (List.concat beads)
 ;;
 
-let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Game_mode.t) ~set_game_mode =
+(* Parse Firebase JSON response to extract board *)
+let parse_board_from_json json_str =
+  try
+    (* Find the "board" field and extract the array *)
+    let start_idx = match String.index json_str '[' with
+      | Some idx -> idx
+      | None -> raise_s [%message "No [ found"]
+    in
+    let end_idx = match String.index_from json_str start_idx ']' with
+      | Some idx -> idx
+      | None -> raise_s [%message "No ] found"]
+    in
+    let board_json = String.sub json_str ~pos:start_idx ~len:(end_idx - start_idx + 1) in
+    Some (Firebase_rest.Game_data.board_of_json board_json)
+  with _ -> None
+;;
+
+(* Cloud multiplayer panel *)
+let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
+  match cloud_state.Cloud_state.current_game_id with
+  | None ->
+      (* Show game creation/joining interface *)
+      Vdom.Node.create
+        "div"
+        ~attrs:[ Vdom.Attr.id "cloud_panel" ]
+        [ Vdom.Node.create "h3" ~attrs:[] [ Vdom.Node.text "Cloud Multiplayer" ]
+        ; Vdom.Node.create
+            "button"
+            ~attrs:
+              [ Vdom.Attr.on_click (fun _ ->
+                  Firebase_rest.create_game 
+                    ~num_squares_per_side:6 
+                    ~init_beads:4 
+                    ~player_id:cloud_state.player_id
+                    ~callback:(fun game_id ->
+                      Firebug.console##log (Js.string ("Created game: " ^ game_id));
+                      
+                      (* Start polling for updates *)
+                      let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
+                        Firebug.console##log (Js.string ("Poll response: " ^ response));
+                        (* Parse the board from JSON and update game state *)
+                        match parse_board_from_json response with
+                        | Some new_board ->
+                            let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
+                            (match new_state with
+                            | Ok state ->
+                                let updated_state = { state with board = new_board } in
+                                Ui_effect.Expert.handle (set_game_state updated_state)
+                            | Error _ -> ())
+                        | None -> ()
+                      ) in
+                      
+                      stop_polling_ref := Some stop_fn;
+                      
+                      let new_cloud_state = 
+                        { cloud_state with 
+                          current_game_id = Some game_id;
+                          is_player_one = true;
+                        } 
+                      in
+                      Ui_effect.Expert.handle (set_cloud_state new_cloud_state)
+                    );
+                  Ui_effect.Ignore)
+              ]
+            [ Vdom.Node.text "Create New Game" ]
+        ; Vdom.Node.create "p" ~attrs:[] [ Vdom.Node.text "Or join existing game:" ]
+        ; Vdom.Node.create
+            "input"
+            ~attrs:
+              [ Vdom.Attr.type_ "text"
+              ; Vdom.Attr.placeholder "Enter Game ID"
+              ; Vdom.Attr.value cloud_state.game_id_input
+              ; Vdom.Attr.on_input (fun _ input_text ->
+                  set_cloud_state { cloud_state with game_id_input = input_text })
+              ]
+            []
+        ; Vdom.Node.create
+            "button"
+            ~attrs:
+              [ Vdom.Attr.on_click (fun _ ->
+                  if String.is_empty cloud_state.game_id_input then
+                    Ui_effect.Ignore
+                  else
+                    let game_id = cloud_state.game_id_input in
+                    Firebase_rest.join_game ~game_id ~player_id:cloud_state.player_id ~callback:(fun () ->
+                      Firebug.console##log (Js.string ("Joined game: " ^ game_id));
+                      
+                      (* Start polling for updates *)
+                      let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
+                        match parse_board_from_json response with
+                        | Some new_board ->
+                            let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
+                            (match new_state with
+                            | Ok state ->
+                                let updated_state = { state with board = new_board } in
+                                Ui_effect.Expert.handle (set_game_state updated_state)
+                            | Error _ -> ())
+                        | None -> ()
+                      ) in
+                      
+                      stop_polling_ref := Some stop_fn;
+                      
+                      let new_cloud_state = 
+                        { cloud_state with 
+                          current_game_id = Some game_id;
+                          is_player_one = false;
+                        } 
+                      in
+                      Ui_effect.Expert.handle (set_cloud_state new_cloud_state)
+                    );
+                    Ui_effect.Ignore)
+              ]
+            [ Vdom.Node.text "Join Game" ]
+        ]
+  | Some game_id ->
+      (* Show current game info *)
+      Vdom.Node.create
+        "div"
+        ~attrs:[ Vdom.Attr.id "cloud_panel" ]
+        [ Vdom.Node.create "p" ~attrs:[] 
+            [ Vdom.Node.text ("Game ID: " ^ game_id) ]
+        ; Vdom.Node.create "p" ~attrs:[] 
+            [ Vdom.Node.text ("You are: Player " ^ 
+                (if cloud_state.is_player_one then "1" else "2")) ]
+        ; Vdom.Node.create "p" ~attrs:[ Vdom.Attr.style (Css_gen.font_size (`Px 12)) ]
+            [ Vdom.Node.text "Share the Game ID with your opponent" ]
+        ; Vdom.Node.create
+            "button"
+            ~attrs:
+              [ Vdom.Attr.on_click (fun _ ->
+                  (* Stop polling if active *)
+                  (match !stop_polling_ref with
+                  | Some stop_fn -> stop_fn ()
+                  | None -> ());
+                  stop_polling_ref := None;
+                  set_cloud_state { cloud_state with current_game_id = None })
+              ]
+            [ Vdom.Node.text "Leave Game" ]
+        ]
+;;
+
+let mancala_board ~(game_state : Game_state.t) ~set_game_state 
+    ~(game_mode : Game_mode.t) ~set_game_mode
+    ~(cloud_state : Cloud_state.t) ~set_cloud_state =
   let is_game_over = Game_state.is_game_over game_state in
   let board = game_state.board in
 
   let delay n =
     let rec wait n = if n <= 0 then () else wait (n - 1) in
-    wait (n * 1000000)  (* Adjust this number - bigger = longer delay *)
+    wait (n * 1000000)
   in
 
   let handle_move (new_game_state : Game_state.t) =
     match game_mode with
     | Game_mode.PlayerVsComputer ->
-        (* Recursive function to let AI keep moving if it gets extra turns *)
         let rec make_ai_moves_if_needed (current_state : Game_state.t) =
           match current_state.decision with
           | Playing { whose_turn = Players.PlayerTwo } ->
@@ -141,17 +290,34 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
               (match Game_state.make_move current_state ai_move with
               | Error _ -> raise_s [%message "AI move failed" (ai_move : int)]
               | Ok ai_game_state -> 
-                  (* Check if AI gets another turn and recurse *)
                   set_game_state ai_game_state :: make_ai_moves_if_needed ai_game_state)
-          | _ -> 
-              (* No longer AI's turn or game over *)
-              []
+          | _ -> []
         in
-        (* Start with the human's move, then add all AI moves *)
         let all_effects = set_game_state new_game_state :: make_ai_moves_if_needed new_game_state in
         Ui_effect.Many all_effects
+    | Game_mode.CloudMultiplayer ->
+        (* Update Firebase with new game state *)
+        (match cloud_state.current_game_id with
+        | Some game_id ->
+            let current_player = 
+              match new_game_state.decision with
+              | Playing { whose_turn = Players.PlayerOne } -> Firebase_rest.Game_data.PlayerOne
+              | Playing { whose_turn = Players.PlayerTwo } -> Firebase_rest.Game_data.PlayerTwo
+              | Winner Players.PlayerOne -> Firebase_rest.Game_data.PlayerOne
+              | Winner Players.PlayerTwo -> Firebase_rest.Game_data.PlayerTwo
+              | Tie -> Firebase_rest.Game_data.PlayerOne
+            in
+            Firebase_rest.update_game_state 
+              ~game_id 
+              ~board:new_game_state.board 
+              ~current_player
+              ~callback:(fun () ->
+                Firebug.console##log (Js.string "Move synced to Firebase")
+              );
+            set_game_state new_game_state
+        | None -> 
+            set_game_state new_game_state)
     | _ -> 
-        (* LocalMultiplayer or CloudMultiplayer *)
         set_game_state new_game_state
   in
 
@@ -160,7 +326,6 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
     let id_class = ids.(board_index) in
     let beads_svg = render_beads ~num_beads ~pit_index:board_index in
     
-    (* Determine whether a pit belongs to the current player *)
     let belongs_to_player =
       match player_class, game_state.decision, game_mode with
       | "p1", Playing { whose_turn = Players.PlayerOne }, _ -> true
@@ -169,8 +334,21 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
       | _ -> false
     in
     
+    (* For cloud multiplayer, only allow moves if you're the right player *)
+    let can_move_in_cloud =
+      match game_mode with
+      | Game_mode.CloudMultiplayer -> (
+        match cloud_state.is_player_one, player_class with
+        | true, "p1" -> true
+        | false, "p2" -> true
+        | _, _ -> false
+      )
+      | _ -> true
+    in
+    
     let maybe_clickable_attr =
-      if (not belongs_to_player) || is_game_over || is_goal || Option.is_none move_number
+      if (not belongs_to_player) || is_game_over || is_goal || 
+         Option.is_none move_number || not can_move_in_cloud
       then Vdom.Attr.empty
       else (
         let move = Option.value_exn move_number in
@@ -240,7 +418,6 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
       ]
   in
   
-  (* Top numbers *)
   let top_numbers =
     Vdom.Node.create
       "div"
@@ -250,7 +427,6 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
          Vdom.Node.create ~attrs:[] "p" [ Vdom.Node.text (Int.to_string board.(board_index)) ]))
   in
   
-  (* Top row: Player One's pits *)
   let top_row =
     Vdom.Node.create
       "div"
@@ -265,7 +441,6 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
            ~move_number:(Some move)))
   in
   
-  (* Bottom row: Player Two's pits *)
   let bottom_row =
     Vdom.Node.create
       "div"
@@ -284,12 +459,10 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
     Vdom.Node.create "div" ~attrs:[ Vdom.Attr.id "middle_rows" ] [ top_row; bottom_row ]
   in
   
-  (* Player 1 goal *)
   let p1_goal =
     render_pit ~board_index:0 ~is_goal:true ~player_class:"" ~move_number:None
   in
   
-  (* Player 2 goal *)
   let p2_goal =
     render_pit
       ~board_index:(game_state.num_squares_per_side + 1)
@@ -298,12 +471,10 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
       ~move_number:None
   in
   
-  (* Board *)
   let board_node =
     Vdom.Node.create "div" ~attrs:[ Vdom.Attr.id "board" ] [ p1_goal; middle_rows; p2_goal ]
   in
   
-  (* Bottom numbers *)
   let bottom_numbers =
     Vdom.Node.create
       "div"
@@ -313,41 +484,55 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state ~(game_mode : Gam
          Vdom.Node.create ~attrs:[] "p" [ Vdom.Node.text (Int.to_string board.(board_index)) ]))
   in
 
-  (* Button panel *)
   let button_panel =
     let create_mode_button ~label ~mode ~button_id =
-    let is_active = Game_mode.equal game_mode mode in
-    Vdom.Node.create
-      "button"
-      ~attrs:
-        [ Vdom.Attr.id button_id
-        ; (if is_active then Vdom.Attr.classes ["active"] else Vdom.Attr.empty)
-        ; Vdom.Attr.on_click (fun _ -> 
-          let init_state = 
-            Game_state.create ~num_squares_per_side:6 ~init_beads:4
-            |> Result.ok
-            |> Option.value_exn
-          in
-          Ui_effect.Many 
-            [ set_game_mode mode
-            ; set_game_state init_state
-            ])
-        ]
-      [ Vdom.Node.text label ]
+      let is_active = Game_mode.equal game_mode mode in
+      Vdom.Node.create
+        "button"
+        ~attrs:
+          [ Vdom.Attr.id button_id
+          ; (if is_active then Vdom.Attr.classes ["active"] else Vdom.Attr.empty)
+          ; Vdom.Attr.on_click (fun _ -> 
+            (* Stop polling if switching away from cloud mode *)
+            (if Game_mode.equal game_mode Game_mode.CloudMultiplayer then
+              match !stop_polling_ref with
+              | Some stop_fn -> stop_fn ()
+              | None -> ());
+            stop_polling_ref := None;
+            
+            let init_state = 
+              Game_state.create ~num_squares_per_side:6 ~init_beads:4
+              |> Result.ok
+              |> Option.value_exn
+            in
+            Ui_effect.Many 
+              [ set_game_mode mode
+              ; set_game_state init_state
+              ; set_cloud_state (Cloud_state.default ())
+              ])
+          ]
+        [ Vdom.Node.text label ]
     in
     Vdom.Node.create
-    "div"
-    ~attrs:[ Vdom.Attr.id "button_panel" ]
+      "div"
+      ~attrs:[ Vdom.Attr.id "button_panel" ]
       [ create_mode_button ~label:"Local Multiplayer" ~mode:Game_mode.LocalMultiplayer ~button_id:"localMultiplayer"
       ; create_mode_button ~label:"Player vs Computer" ~mode:Game_mode.PlayerVsComputer ~button_id:"playerVsComputer"
       ; create_mode_button ~label:"Cloud Multiplayer" ~mode:Game_mode.CloudMultiplayer ~button_id:"cloudMultiplayer"
       ]
   in
 
+  (* Add cloud multiplayer panel when in that mode *)
+  let cloud_panel =
+    if Game_mode.equal game_mode Game_mode.CloudMultiplayer
+    then cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state
+    else Vdom.Node.none
+  in
+
   Vdom.Node.create
     "div"
     ~attrs:[ Vdom.Attr.class_ "game" ]
-    [ hud; top_numbers; board_node; bottom_numbers; button_panel ]
+    [ hud; cloud_panel; top_numbers; board_node; bottom_numbers; button_panel ]
 ;;
 
 let app =
@@ -362,11 +547,17 @@ let app =
   let%sub game_mode, set_game_mode =
     Bonsai.state ~default_model:Game_mode.LocalMultiplayer (module Game_mode)
   in
+  let%sub cloud_state, set_cloud_state =
+    Bonsai.state ~default_model:(Cloud_state.default ()) (module Cloud_state)
+  in
   let%arr game_state = game_state
   and set_game_state = set_game_state
   and game_mode = game_mode
-  and set_game_mode = set_game_mode in
+  and set_game_mode = set_game_mode
+  and cloud_state = cloud_state
+  and set_cloud_state = set_cloud_state in
   mancala_board ~game_state ~set_game_state ~game_mode ~set_game_mode
+    ~cloud_state ~set_cloud_state
 ;;
 
 let () = Bonsai_web.Start.start app
