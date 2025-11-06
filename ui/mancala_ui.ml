@@ -166,14 +166,18 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                       
                       (* Start polling for updates *)
                       let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
-                        Firebug.console##log (Js.string ("Poll response: " ^ response));
-                        (* Parse the board from JSON and update game state *)
+                        let current_player = 
+                          match (Firebase_rest.extract_json_field response "currentPlayer") with
+                          | Some "PlayerOne" -> Players.PlayerOne
+                          | Some "PlayerTwo" -> Players.PlayerTwo
+                          | _ -> Players.PlayerOne
+                        in
                         match parse_board_from_json response with
                         | Some new_board ->
                             let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
                             (match new_state with
                             | Ok state ->
-                                let updated_state = { state with board = new_board } in
+                                let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
                                 Ui_effect.Expert.handle (set_game_state updated_state)
                             | Error _ -> ())
                         | None -> ()
@@ -216,12 +220,18 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                       
                       (* Start polling for updates *)
                       let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
+                        let current_player = 
+                          match (Firebase_rest.extract_json_field response "currentPlayer") with
+                          | Some "PlayerOne" -> Players.PlayerOne
+                          | Some "PlayerTwo" -> Players.PlayerTwo
+                          | _ -> Players.PlayerOne
+                        in
                         match parse_board_from_json response with
                         | Some new_board ->
                             let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
                             (match new_state with
                             | Ok state ->
-                                let updated_state = { state with board = new_board } in
+                                let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
                                 Ui_effect.Expert.handle (set_game_state updated_state)
                             | Error _ -> ())
                         | None -> ()

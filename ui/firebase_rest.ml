@@ -206,7 +206,7 @@ let start_polling ~game_id ~callback =
 
 (* Helper to parse a simple field from JSON string *)
 (* This is VERY basic - just finds "key":"value" patterns *)
-let extract_json_field json_str field_name =
+let extract_json_field (json_str : string) field_name =
   try
     let pattern = sprintf {|"%s":"|} field_name in
     match String.substr_index json_str ~pattern with
