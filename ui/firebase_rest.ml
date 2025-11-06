@@ -186,7 +186,7 @@ let update_game_state ~game_id ~board ~current_player ~callback =
     callback ()
   )
 
-(* Poll for game updates every 2 seconds *)
+(* Poll for game updates every 1 seconds *)
 let start_polling ~game_id ~callback =
   let rec poll () =
     let url = make_url ("/games/" ^ game_id) in
@@ -194,9 +194,9 @@ let start_polling ~game_id ~callback =
       (* Call the callback with the response *)
       callback response;
       
-      (* Schedule next poll in 2 seconds (2000ms) *)
+      (* Schedule next poll in 1 seconds (2000ms) *)
       let poll_callback = Js.wrap_callback poll in
-      let timeout = 2000.0 in
+      let timeout = 1000.0 in
       ignore (Dom_html.window##setTimeout poll_callback timeout)
     )
   in
