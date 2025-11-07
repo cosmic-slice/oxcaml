@@ -34,6 +34,8 @@ end
 
 (* Store the stop_polling function separately - not in state *)
 let stop_polling_ref : (unit -> unit) option ref = ref None
+(* Track last update timestamp to avoid duplicate updates *)
+let last_update_timestamp : float ref = ref 0.0
 
 (* All of the bead constants are declared here *)
 let colors = [| "red"; "blue"; "green"; "yellow" |]
@@ -144,6 +146,15 @@ let parse_board_from_json json_str =
   with _ -> None
 ;;
 
+(* Extract timestamp from JSON *)
+let parse_timestamp_from_json json_str =
+  try
+    match Firebase_rest.extract_json_field json_str "timestamp" with
+    | Some ts_str -> Some (Float.of_string ts_str)
+    | None -> None
+  with _ -> None
+;;
+
 (* Cloud multiplayer panel *)
 let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
   match cloud_state.Cloud_state.current_game_id with
@@ -164,23 +175,31 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                     ~callback:(fun game_id ->
                       Firebug.console##log (Js.string ("Created game: " ^ game_id));
                       
+                      (* Reset timestamp tracker *)
+                      last_update_timestamp := 0.0;
+                      
                       (* Start polling for updates *)
                       let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
-                        let current_player = 
-                          match (Firebase_rest.extract_json_field response "currentPlayer") with
-                          | Some "PlayerOne" -> Players.PlayerOne
-                          | Some "PlayerTwo" -> Players.PlayerTwo
-                          | _ -> Players.PlayerOne
-                        in
-                        match parse_board_from_json response with
-                        | Some new_board ->
-                            let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
-                            (match new_state with
-                            | Ok state ->
-                                let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
-                                Ui_effect.Expert.handle (set_game_state updated_state)
-                            | Error _ -> ())
-                        | None -> ()
+                        (* Check timestamp to avoid duplicate updates *)
+                        match parse_timestamp_from_json response with
+                        | Some timestamp when (Float.compare timestamp !last_update_timestamp) > 0 ->
+                            last_update_timestamp := timestamp;
+                            let current_player = 
+                              match (Firebase_rest.extract_json_field response "currentPlayer") with
+                              | Some "PlayerOne" -> Players.PlayerOne
+                              | Some "PlayerTwo" -> Players.PlayerTwo
+                              | _ -> Players.PlayerOne
+                            in
+                            (match parse_board_from_json response with
+                            | Some new_board ->
+                                let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
+                                (match new_state with
+                                | Ok state ->
+                                    let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
+                                    Ui_effect.Expert.handle (set_game_state updated_state)
+                                | Error _ -> ())
+                            | None -> ())
+                        | _ -> ()
                       ) in
                       
                       stop_polling_ref := Some stop_fn;
@@ -218,23 +237,31 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                     Firebase_rest.join_game ~game_id ~player_id:cloud_state.player_id ~callback:(fun () ->
                       Firebug.console##log (Js.string ("Joined game: " ^ game_id));
                       
+                      (* Reset timestamp tracker *)
+                      last_update_timestamp := 0.0;
+                      
                       (* Start polling for updates *)
                       let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
-                        let current_player = 
-                          match (Firebase_rest.extract_json_field response "currentPlayer") with
-                          | Some "PlayerOne" -> Players.PlayerOne
-                          | Some "PlayerTwo" -> Players.PlayerTwo
-                          | _ -> Players.PlayerOne
-                        in
-                        match parse_board_from_json response with
-                        | Some new_board ->
-                            let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
-                            (match new_state with
-                            | Ok state ->
-                                let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
-                                Ui_effect.Expert.handle (set_game_state updated_state)
-                            | Error _ -> ())
-                        | None -> ()
+                        (* Check timestamp to avoid duplicate updates *)
+                        match parse_timestamp_from_json response with
+                        | Some timestamp when (Float.compare timestamp !last_update_timestamp) > 0 ->
+                            last_update_timestamp := timestamp;
+                            let current_player = 
+                              match (Firebase_rest.extract_json_field response "currentPlayer") with
+                              | Some "PlayerOne" -> Players.PlayerOne
+                              | Some "PlayerTwo" -> Players.PlayerTwo
+                              | _ -> Players.PlayerOne
+                            in
+                            (match parse_board_from_json response with
+                            | Some new_board ->
+                                let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
+                                (match new_state with
+                                | Ok state ->
+                                    let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
+                                    Ui_effect.Expert.handle (set_game_state updated_state)
+                                | Error _ -> ())
+                            | None -> ())
+                        | _ -> ()
                       ) in
                       
                       stop_polling_ref := Some stop_fn;
@@ -272,6 +299,7 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                   | Some stop_fn -> stop_fn ()
                   | None -> ());
                   stop_polling_ref := None;
+                  last_update_timestamp := 0.0;
                   set_cloud_state { cloud_state with current_game_id = None })
               ]
             [ Vdom.Node.text "Leave Game" ]
@@ -306,7 +334,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
         let all_effects = set_game_state new_game_state :: make_ai_moves_if_needed new_game_state in
         Ui_effect.Many all_effects
     | Game_mode.CloudMultiplayer ->
-      (* Update Firebase with new game state *)
+      (* Update Firebase with new game state AND update local state immediately *)
       (match cloud_state.current_game_id with
       | Some game_id ->
         let current_player = 
@@ -317,6 +345,11 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
         | Winner Players.PlayerTwo -> Firebase_rest.Game_data.PlayerTwo
         | Tie -> Firebase_rest.Game_data.PlayerOne
         in
+        (* Update timestamp to prevent re-applying our own move *)
+        let date_obj = Js.Unsafe.new_obj Js.Unsafe.global##._Date [||] in
+        let timestamp = Js.to_float (Js.Unsafe.meth_call date_obj "getTime" [||]) in
+        last_update_timestamp := timestamp;
+        
         Firebase_rest.update_game_state 
         ~game_id 
         ~board:new_game_state.board 
@@ -324,9 +357,10 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
         ~callback:(fun () ->
           Firebug.console##log (Js.string "Move synced to Firebase")
         );
-        Ui_effect.Ignore (* Player 1 waits for the poll to confirm/update the state *)
+        (* Update local state immediately for responsive UI *)
+        set_game_state new_game_state
       | None -> 
-        set_game_state new_game_state) (* Keep this for safety if game_id is missing *)
+        set_game_state new_game_state)
     | _ -> 
       set_game_state new_game_state
   in
@@ -504,11 +538,15 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
           ; (if is_active then Vdom.Attr.classes ["active"] else Vdom.Attr.empty)
           ; Vdom.Attr.on_click (fun _ -> 
             (* Stop polling if switching away from cloud mode *)
-            (if Game_mode.equal game_mode Game_mode.CloudMultiplayer then
+            (if Game_mode.equal game_mode Game_mode.CloudMultiplayer then (
               match !stop_polling_ref with
-              | Some stop_fn -> stop_fn ()
-              | None -> ());
+              | Some stop_fn -> 
+                  stop_fn ();
+                  Firebug.console##log (Js.string "Stopped polling")
+              | None -> ()
+            ));
             stop_polling_ref := None;
+            last_update_timestamp := 0.0;
             
             let init_state = 
               Game_state.create ~num_squares_per_side:6 ~init_beads:4
@@ -542,7 +580,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
   Vdom.Node.create
     "div"
     ~attrs:[ Vdom.Attr.class_ "game" ]
-    [ hud; top_numbers; board_node; bottom_numbers; button_panel; cloud_panel ]
+    [ hud; cloud_panel; top_numbers; board_node; bottom_numbers; button_panel ]
 ;;
 
 let app =
