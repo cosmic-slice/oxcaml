@@ -196,7 +196,7 @@ let start_polling ~game_id ~callback =
       
       (* Schedule next poll in 1 seconds (2000ms) *)
       let poll_callback = Js.wrap_callback poll in
-      let timeout = 1000.0 in
+      let timeout = 500.0 in
       ignore (Dom_html.window##setTimeout poll_callback timeout)
     )
   in
