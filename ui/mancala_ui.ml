@@ -182,7 +182,7 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                       let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
                         (* Check timestamp to avoid duplicate updates *)
                         match parse_timestamp_from_json response with
-                        | Some timestamp when (Float.compare timestamp !last_update_timestamp) > 0 ->
+                        | Some timestamp when (Float.compare timestamp !last_update_timestamp) >= 0 ->
                             last_update_timestamp := timestamp;
                             let current_player = 
                               match (Firebase_rest.extract_json_field response "currentPlayer") with
@@ -244,7 +244,7 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                       let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
                         (* Check timestamp to avoid duplicate updates *)
                         match parse_timestamp_from_json response with
-                        | Some timestamp when (Float.compare timestamp !last_update_timestamp) > 0 ->
+                        | Some timestamp when (Float.compare timestamp !last_update_timestamp) >= 0 ->
                             last_update_timestamp := timestamp;
                             let current_player = 
                               match (Firebase_rest.extract_json_field response "currentPlayer") with
@@ -580,7 +580,7 @@ let mancala_board ~(game_state : Game_state.t) ~set_game_state
   Vdom.Node.create
     "div"
     ~attrs:[ Vdom.Attr.class_ "game" ]
-    [ hud; cloud_panel; top_numbers; board_node; bottom_numbers; button_panel ]
+    [ hud; top_numbers; board_node; bottom_numbers; button_panel; cloud_panel ]
 ;;
 
 let app =
