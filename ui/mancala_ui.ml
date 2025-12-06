@@ -222,7 +222,7 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
         
         ; Vdom.Node.create "p" 
             ~attrs:[ Vdom.Attr.style (Css_gen.create ~field:"margin-top" ~value:"20px") ] 
-            [ Vdom.Node.text "Or create/join manually:" ]
+            [ Vdom.Node.text "Create/join manually:" ]
         
         ; Vdom.Node.create
             "button"
