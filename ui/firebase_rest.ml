@@ -3,22 +3,18 @@
 open! Core
 open Js_of_ocaml
 
-(* Characters available for the Game ID: A-Z, a-z, 0-9 *)
+(* List of valid alphanumeric chars for Lobby ID *)
 let id_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 let id_len = 6
 
-(* Generates a random 6-character alphanumeric string *)
+(* Generate a random 6-character alphanumeric string *)
 let generate_game_id () : string =
   let char_count = String.length id_chars in
   
-  (* Generate a random integer in the range of valid chars *)
-  let random_int () = 
-    int_of_float (Js.to_float (Js.Unsafe.global##.Math##random) *. (float_of_int char_count))
-  in
   let rec loop acc count =
     if count = 0 then acc
     else
-      let index = random_int () in
+      let index = Random.int char_count in
       let char = id_chars.[index] in
       loop (String.of_char char ^ acc) (count - 1)
   in
@@ -73,7 +69,7 @@ module Http = struct
     make_request ~http_method:"PATCH" ~url ~body_opt:(Some body) ~callback
 end
 
-(* Your Firebase database URL *)
+(* Firebase database URL *)
 let database_url = "https://mancala-eefa4-default-rtdb.firebaseio.com"
 
 (* Make a path to a Firebase endpoint *)
@@ -186,23 +182,33 @@ let update_game_state ~game_id ~board ~current_player ~callback =
     callback ()
   )
 
-(* Poll for game updates every 1 seconds *)
+(* Poll for game updates every 0.5 seconds *)
 let start_polling ~game_id ~callback =
+  let should_continue = ref true in
+  let timeout_id_ref = ref None in
   let rec poll () =
-    let url = make_url ("/games/" ^ game_id) in
-    Http.get url (fun response ->
-      (* Call the callback with the response *)
-      callback response;
-      
-      (* Schedule next poll in 1 seconds (2000ms) *)
-      let poll_callback = Js.wrap_callback poll in
-      let timeout = 500.0 in
-      ignore (Dom_html.window##setTimeout poll_callback timeout)
-    )
+    (* If polling should still continue, make another get request *)
+    if !should_continue then
+      let url = make_url ("/games/" ^ game_id) in
+      Http.get url (fun response ->
+        if !should_continue then begin
+          callback response;
+          
+          let poll_callback = Js.wrap_callback poll in
+          let timeout = 500.0 in
+          let tid = Dom_html.window##setTimeout poll_callback timeout in
+          timeout_id_ref := Some tid
+        end
+      )
   in
   poll ();
-  (* Return a stop function (though we don't actually use it) *)
-  (fun () -> ())
+  (* Stop function by setting flag and cancelling pending timeout *)
+  (fun () -> 
+    should_continue := false;
+    match !timeout_id_ref with
+    | Some id -> Dom_html.window##clearTimeout id
+    | None -> ()
+  )
 
 (* Helper to parse a simple field from JSON string in key:value pattern *)
 let extract_json_field (json_str : string) field_name =
