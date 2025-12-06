@@ -144,7 +144,24 @@ let parse_board_from_json json_str =
   with _ -> None
 ;;
 
-(* Cloud multiplayer panel *)
+(* Helper function to parse board and current player from JSON response *)
+let update_from_json_response response set_game_state =
+  let current_player = 
+    match (Firebase_rest.extract_json_field response "currentPlayer") with
+    | Some "PlayerOne" -> Players.PlayerOne
+    | Some "PlayerTwo" -> Players.PlayerTwo
+    | _ -> Players.PlayerOne
+  in
+  match parse_board_from_json response with
+  | Some new_board ->
+      let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
+      (match new_state with
+      | Ok state ->
+          let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
+          Ui_effect.Expert.handle (set_game_state updated_state)
+      | Error _ -> ())
+  | None -> ()
+
 let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
   match cloud_state.Cloud_state.current_game_id with
   | None ->
@@ -153,6 +170,60 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
         "div"
         ~attrs:[ Vdom.Attr.id "cloud_panel" ]
         [ Vdom.Node.create "h3" ~attrs:[] [ Vdom.Node.text "Cloud Multiplayer" ]
+        
+        (* Quick match button *)
+        ; Vdom.Node.create
+            "button"
+            ~attrs:
+              [ Vdom.Attr.style (Css_gen.create 
+                  ~field:"background-color" 
+                  ~value:"#4CAF50")
+              ; Vdom.Attr.style (Css_gen.create 
+                  ~field:"font-size" 
+                  ~value:"18px")
+              ; Vdom.Attr.style (Css_gen.create 
+                  ~field:"padding" 
+                  ~value:"15px 30px")
+              ; Vdom.Attr.on_click (fun _ ->
+                  Firebug.console##log (Js.string "Quick match clicked");
+                  Firebase_rest.quick_match
+                    ~num_squares_per_side:6 
+                    ~init_beads:4 
+                    ~player_id:cloud_state.player_id
+                    ~callback:(fun game_id is_creator ->
+                      Firebug.console##log (Js.string 
+                        ("Quick match " ^ 
+                         (if is_creator then "created: " else "joined: ") ^ 
+                         game_id));
+                      
+                      (* Start polling for updates *)
+                      let stop_fn = Firebase_rest.start_polling 
+                        ~game_id 
+                        ~callback:(fun response ->
+                          update_from_json_response response set_game_state
+                        ) 
+                      in
+                      
+                      stop_polling_ref := Some stop_fn;
+                      
+                      let new_cloud_state = 
+                        { cloud_state with 
+                          current_game_id = Some game_id;
+                          is_player_one = is_creator;
+                        } 
+                      in
+                      Ui_effect.Expert.handle (set_cloud_state new_cloud_state)
+                    );
+                  Ui_effect.Ignore)
+              ]
+            [ Vdom.Node.text "Quick Match" ]
+        
+        ; Vdom.Node.create "hr" ~attrs:[] []
+        
+        ; Vdom.Node.create "p" 
+            ~attrs:[ Vdom.Attr.style (Css_gen.create ~field:"margin-top" ~value:"20px") ] 
+            [ Vdom.Node.text "Or create/join manually:" ]
+        
         ; Vdom.Node.create
             "button"
             ~attrs:
@@ -165,23 +236,12 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                       Firebug.console##log (Js.string ("Created game: " ^ game_id));
                       
                       (* Start polling for updates *)
-                      let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
-                        let current_player = 
-                          match (Firebase_rest.extract_json_field response "currentPlayer") with
-                          | Some "PlayerOne" -> Players.PlayerOne
-                          | Some "PlayerTwo" -> Players.PlayerTwo
-                          | _ -> Players.PlayerOne
-                        in
-                        match parse_board_from_json response with
-                        | Some new_board ->
-                            let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
-                            (match new_state with
-                            | Ok state ->
-                                let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
-                                Ui_effect.Expert.handle (set_game_state updated_state)
-                            | Error _ -> ())
-                        | None -> ()
-                      ) in
+                      let stop_fn = Firebase_rest.start_polling 
+                        ~game_id 
+                        ~callback:(fun response ->
+                          update_from_json_response response set_game_state
+                        ) 
+                      in
                       
                       stop_polling_ref := Some stop_fn;
                       
@@ -196,7 +256,9 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                   Ui_effect.Ignore)
               ]
             [ Vdom.Node.text "Create New Game" ]
+        
         ; Vdom.Node.create "p" ~attrs:[] [ Vdom.Node.text "Or join existing game:" ]
+        
         ; Vdom.Node.create
             "input"
             ~attrs:
@@ -207,6 +269,7 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                   set_cloud_state { cloud_state with game_id_input = input_text })
               ]
             []
+        
         ; Vdom.Node.create
             "button"
             ~attrs:
@@ -219,23 +282,12 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
                       Firebug.console##log (Js.string ("Joined game: " ^ game_id));
                       
                       (* Start polling for updates *)
-                      let stop_fn = Firebase_rest.start_polling ~game_id ~callback:(fun response ->
-                        let current_player = 
-                          match (Firebase_rest.extract_json_field response "currentPlayer") with
-                          | Some "PlayerOne" -> Players.PlayerOne
-                          | Some "PlayerTwo" -> Players.PlayerTwo
-                          | _ -> Players.PlayerOne
-                        in
-                        match parse_board_from_json response with
-                        | Some new_board ->
-                            let new_state = Game_state.create ~num_squares_per_side:6 ~init_beads:4 in
-                            (match new_state with
-                            | Ok state ->
-                                let updated_state = { state with board = new_board; decision = Playing { whose_turn = current_player }} in
-                                Ui_effect.Expert.handle (set_game_state updated_state)
-                            | Error _ -> ())
-                        | None -> ()
-                      ) in
+                      let stop_fn = Firebase_rest.start_polling 
+                        ~game_id 
+                        ~callback:(fun response ->
+                          update_from_json_response response set_game_state
+                        ) 
+                      in
                       
                       stop_polling_ref := Some stop_fn;
                       
@@ -276,7 +328,7 @@ let cloud_multiplayer_panel ~cloud_state ~set_cloud_state ~set_game_state =
               ]
             [ Vdom.Node.text "Leave Game" ]
         ]
-;;
+  
 
 let mancala_board ~(game_state : Game_state.t) ~set_game_state 
     ~(game_mode : Game_mode.t) ~set_game_mode

@@ -224,3 +224,71 @@ let extract_json_field (json_str : string) field_name =
         | None -> None)
     | None -> None
   with _ -> None
+
+(* Parse a single game object from JSON *)
+let parse_game_object json_str =
+  try
+    let game_id = extract_json_field json_str "gameId" in
+    let status = extract_json_field json_str "status" in
+    let player1_id = extract_json_field json_str "player1Id" in
+    let player2_id = extract_json_field json_str "player2Id" in
+    
+    match game_id, status, player1_id with
+    | Some gid, Some st, Some p1 ->
+        Some (gid, st, Some p1, player2_id)
+    | _ -> None
+  with _ -> None
+
+(* Find an open game waiting for a player *)
+let find_open_game ~callback =
+  let url = make_url "/games" in
+  Http.get url (fun response ->
+    (* Firebase returns: {"gameId1": {...}, "gameId2": {...}, ...} or null *)
+    if String.equal response "null" || String.is_empty response then
+      callback None
+    else
+      (* Split by game objects and check each one *)
+      let rec find_waiting_game pos =
+        if pos >= String.length response then
+          None
+        else
+          (* Look for gameId field *)
+          match String.substr_index response ~pos ~pattern:{|"gameId":"|} with
+          | None -> None
+          | Some start_idx ->
+              (* Extract a chunk that likely contains this game object *)
+              let chunk_start = max 0 (start_idx - 50) in
+              let chunk_len = min 500 (String.length response - chunk_start) in
+              let chunk = String.sub response ~pos:chunk_start ~len:chunk_len in
+              
+              (match parse_game_object chunk with
+              | Some (game_id, status, Some _player1, player2_opt) ->
+                  (* Check if this game is waiting *)
+                  if String.equal status "waiting" && Option.is_none player2_opt then
+                    Some game_id
+                  else
+                    find_waiting_game (start_idx + 1)
+              | _ -> find_waiting_game (start_idx + 1))
+      in
+      
+      let result = find_waiting_game 0 in
+      callback result
+  )
+
+(* Quick match: find open game or create new one *)
+let quick_match ~num_squares_per_side ~init_beads ~player_id ~callback =
+  find_open_game ~callback:(fun game_id_opt ->
+    match game_id_opt with
+    | Some game_id ->
+        (* Found an open game - join it *)
+        Firebug.console##log (Js.string ("Quick match: joining game " ^ game_id));
+        join_game ~game_id ~player_id ~callback:(fun () ->
+          callback game_id false (* false = not creator, you're player 2 *)
+        )
+    | None ->
+        (* No open game - create one *)
+        Firebug.console##log (Js.string "Quick match: creating new game");
+        create_game ~num_squares_per_side ~init_beads ~player_id ~callback:(fun game_id ->
+          callback game_id true (* true = creator, you're player 1 *)
+        )
+  )
